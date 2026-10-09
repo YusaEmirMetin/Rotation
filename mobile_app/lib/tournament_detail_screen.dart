@@ -46,6 +46,9 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       // 3. Puan Durumunu al
       final resStandings = await http.get(Uri.parse('$kBaseUrl/api/tournaments/${widget.tournament['id']}/standings'));
 
+      // 4. Fikstürü al
+      final resFixtures = await http.get(Uri.parse('$kBaseUrl/api/fixtures/tournament/${widget.tournament['id']}'));
+
       if (resTour.statusCode == 200 && resTeams.statusCode == 200) {
         final tourData = json.decode(utf8.decode(resTour.bodyBytes));
         setState(() {
@@ -53,6 +56,9 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           _allTeams = json.decode(utf8.decode(resTeams.bodyBytes));
           if (resStandings.statusCode == 200) {
             _standings = json.decode(utf8.decode(resStandings.bodyBytes));
+          }
+          if (resFixtures.statusCode == 200) {
+            _fixtures = json.decode(utf8.decode(resFixtures.bodyBytes));
           }
           _isLoading = false;
         });
@@ -90,6 +96,38 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       }
     } catch (e) {
       debugPrint('Start Match Error: $e');
+    }
+  }
+
+  Future<void> _generateFixtures() async {
+    if (_tournamentTeams.length < 2) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('At least 2 teams are required to generate fixtures!')),
+        );
+      }
+      return;
+    }
+    
+    setState(() => _isLoading = true);
+    try {
+      final res = await http.post(
+        Uri.parse('$kBaseUrl/api/fixtures/tournament/${widget.tournament['id']}/generate'),
+      );
+      
+      if (res.statusCode == 200) {
+        _fetchData(); // Fikstürler oluştuktan sonra veriyi tekrar çek
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${res.body}')),
+          );
+        }
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint('Generate Fixtures Error: $e');
+      setState(() => _isLoading = false);
     }
   }
 
@@ -306,10 +344,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
             const Text('FIXTURES NOT GENERATED YET', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: () {
-                // TODO: Fikstür oluşturma algoritması backend'de yazıldığında buraya bağlanacak.
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fixture generation is under construction!')));
-              },
+              onPressed: _generateFixtures,
               icon: const Icon(Icons.generating_tokens, color: Colors.white, size: 18),
               label: const Text('GENERATE FIXTURES', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
@@ -327,7 +362,47 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       padding: const EdgeInsets.all(16),
       itemCount: _fixtures.length,
       itemBuilder: (context, index) {
-        return const SizedBox.shrink(); // Placeholder for future fixture cards
+        final fix = _fixtures[index];
+        final homeTeamId = fix['homeTeamId'];
+        final awayTeamId = fix['awayTeamId'];
+        
+        final homeTeam = _tournamentTeams.firstWhere((t) => t['id'] == homeTeamId, orElse: () => {'name': 'Unknown'});
+        final awayTeam = _tournamentTeams.firstWhere((t) => t['id'] == awayTeamId, orElse: () => {'name': 'Unknown'});
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: kSurface,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('WEEK ${fix['tournamentWeek']}', style: const TextStyle(color: kPrimary, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(2)),
+                    child: const Text('SCHEDULED', style: TextStyle(color: kTextSub, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: Text(homeTeam['name']?.toString().toUpperCase() ?? 'UNKNOWN', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('VS', style: TextStyle(color: kTextSub, fontSize: 12, fontWeight: FontWeight.bold))),
+                  Expanded(child: Text(awayTeam['name']?.toString().toUpperCase() ?? 'UNKNOWN', textAlign: TextAlign.right, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                ],
+              ),
+            ],
+          ),
+        );
       },
     );
   }

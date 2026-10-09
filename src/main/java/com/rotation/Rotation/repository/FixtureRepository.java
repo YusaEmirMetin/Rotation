@@ -9,4 +9,5 @@ import com.rotation.Rotation.entity.Fixture;
 public interface FixtureRepository extends JpaRepository<Fixture, Long> {
     List<Fixture> findByTournamentWeek(Integer tournamentWeek); 
     List<Fixture> findByTournamentWeekAndMatchDay(Integer tournamentWeek, Integer matchDay);
+    List<Fixture> findByTournamentId(Long tournamentId);
 }

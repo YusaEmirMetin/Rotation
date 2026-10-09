@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.http.ResponseEntity;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -35,4 +37,18 @@ public class FixtureController {
         return fixtureService.getFixturesByTournamentWeekAndMatchDay(tournamentWeek, matchDay);
     }
 
+    @GetMapping("/tournament/{tournamentId}")
+    public List<Fixture> getFixturesByTournamentId(@PathVariable Long tournamentId) {
+        return fixtureService.getFixturesByTournamentId(tournamentId);
+    }
+
+    @PostMapping("/tournament/{tournamentId}/generate")
+    public ResponseEntity<?> generateFixtures(@PathVariable Long tournamentId) {
+        try {
+            List<Fixture> fixtures = fixtureService.generateFixturesForTournament(tournamentId);
+            return ResponseEntity.ok(fixtures);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
