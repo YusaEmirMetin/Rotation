@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rotation.Rotation.entity.Tournament;
+import com.rotation.Rotation.entity.TournamentStanding;
+import com.rotation.Rotation.repository.TournamentStandingRepository;
 import com.rotation.Rotation.service.TournamentService;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TournamentController {
     private final TournamentService tournamentService;
+    private final TournamentStandingRepository standingRepository;
 
     @PostMapping
     public Tournament createTournament(@RequestBody Tournament tournament) {
@@ -50,5 +53,10 @@ public class TournamentController {
     @PostMapping("/{tournamentId}/teams/{teamId}")
     public Tournament addTeamToTournament(@PathVariable Long tournamentId, @PathVariable Long teamId) {
         return tournamentService.addTeamToTournament(tournamentId, teamId);
+    }
+
+    @GetMapping("/{tournamentId}/standings")
+    public List<TournamentStanding> getTournamentStandings(@PathVariable Long tournamentId) {
+        return standingRepository.findByTournamentIdOrderByPointsDesc(tournamentId);
     }
 }

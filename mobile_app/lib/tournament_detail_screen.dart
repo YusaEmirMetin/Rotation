@@ -25,6 +25,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   bool _isLoading = true;
   List<dynamic> _tournamentTeams = [];
   List<dynamic> _allTeams = [];
+  List<dynamic> _standings = [];
 
   @override
   void initState() {
@@ -41,11 +42,17 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       // 2. Sistemdeki tüm takımları al (Ekleme listesi için)
       final resTeams = await http.get(Uri.parse('$kBaseUrl/api/teams'));
 
+      // 3. Puan Durumunu al
+      final resStandings = await http.get(Uri.parse('$kBaseUrl/api/tournaments/${widget.tournament['id']}/standings'));
+
       if (resTour.statusCode == 200 && resTeams.statusCode == 200) {
         final tourData = json.decode(utf8.decode(resTour.bodyBytes));
         setState(() {
           _tournamentTeams = tourData['teams'] ?? [];
           _allTeams = json.decode(utf8.decode(resTeams.bodyBytes));
+          if (resStandings.statusCode == 200) {
+            _standings = json.decode(utf8.decode(resStandings.bodyBytes));
+          }
           _isLoading = false;
         });
       }
@@ -140,104 +147,188 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: kBg,
-        appBar: AppBar(
+    return DefaultTabController(
+      length: 2,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Scaffold(
           backgroundColor: kBg,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
+          appBar: AppBar(
+            backgroundColor: kBg,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(
+              widget.tournament['tournamentName']?.toString().toUpperCase() ?? 'DETAILS',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+            ),
+            bottom: const TabBar(
+              indicatorColor: kPrimary,
+              labelColor: kPrimary,
+              unselectedLabelColor: kTextSub,
+              labelStyle: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+              tabs: [
+                Tab(text: 'STANDINGS'),
+                Tab(text: 'TEAMS'),
+              ],
+            ),
           ),
-          title: Text(
-            widget.tournament['tournamentName']?.toString().toUpperCase() ?? 'DETAILS',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
-          ),
-        ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: kPrimary))
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    width: double.infinity,
-                    color: kSurface,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('PARTICIPATING TEAMS', style: TextStyle(color: kTextSub, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('${_tournamentTeams.length} TEAMS', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
-                            if (_tournamentTeams.length >= 2)
-                              ElevatedButton.icon(
-                                onPressed: _startMatch,
-                                icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                                label: const Text('START MATCH', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: kTeal,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: _tournamentTeams.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.group_off, size: 48, color: Colors.white.withOpacity(0.1)),
-                                const SizedBox(height: 16),
-                                const Text('NO TEAMS ADDED YET', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
-                              ],
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _tournamentTeams.length,
-                            itemBuilder: (context, index) {
-                              final team = _tournamentTeams[index];
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: kSurface,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.white.withOpacity(0.05)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.shield, color: kPrimary),
-                                    const SizedBox(width: 16),
-                                    Text(
-                                      team['name']?.toString().toUpperCase() ?? 'UNKNOWN',
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: kPrimary))
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      width: double.infinity,
+                      color: kSurface,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('STATUS', style: TextStyle(color: kTextSub, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Text(widget.tournament['tournamentStatus']?.toString().toUpperCase() ?? 'ACTIVE', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+                            ],
                           ),
-                  ),
-                ],
-              ),
-        floatingActionButton: FloatingActionButton.extended(
-          backgroundColor: kPrimary,
-          onPressed: _showAddTeamSheet,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text('ADD TEAM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          if (_tournamentTeams.length >= 2)
+                            ElevatedButton.icon(
+                              onPressed: _startMatch,
+                              icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                              label: const Text('START MATCH', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kTeal,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), // Corporate sharp corner
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          // TAB 1: STANDINGS
+                          _buildStandingsTab(),
+                          
+                          // TAB 2: TEAMS
+                          _buildTeamsTab(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+          floatingActionButton: FloatingActionButton.extended(
+            backgroundColor: kPrimary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), // Sharp corner
+            onPressed: _showAddTeamSheet,
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: const Text('ADD TEAM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildStandingsTab() {
+    if (_standings.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.emoji_events, size: 48, color: Colors.white.withOpacity(0.1)),
+            const SizedBox(height: 16),
+            const Text('NO STANDINGS AVAILABLE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SingleChildScrollView(
+        child: DataTable(
+          headingTextStyle: const TextStyle(color: kTextSub, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1),
+          dataTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
+          columnSpacing: 24,
+          columns: const [
+            DataColumn(label: Text('#')),
+            DataColumn(label: Text('TEAM')),
+            DataColumn(label: Text('P', tooltip: 'Played')),
+            DataColumn(label: Text('W', tooltip: 'Won')),
+            DataColumn(label: Text('L', tooltip: 'Lost')),
+            DataColumn(label: Text('PTS', tooltip: 'Points')),
+            DataColumn(label: Text('SW', tooltip: 'Sets Won')),
+            DataColumn(label: Text('SL', tooltip: 'Sets Lost')),
+          ],
+          rows: List.generate(_standings.length, (index) {
+            final st = _standings[index];
+            final team = st['team'] ?? {};
+            return DataRow(
+              color: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+                if (index < 4) return kPrimary.withOpacity(0.05); // Playoff positions
+                return null; // Default
+              }),
+              cells: [
+                DataCell(Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold))),
+                DataCell(Text(team['name']?.toString().toUpperCase() ?? 'UNKNOWN', style: const TextStyle(fontWeight: FontWeight.bold))),
+                DataCell(Text('${st['playedMatches'] ?? 0}')),
+                DataCell(Text('${st['wins'] ?? 0}')),
+                DataCell(Text('${st['losses'] ?? 0}')),
+                DataCell(Text('${st['points'] ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold, color: kTeal))),
+                DataCell(Text('${st['wonSets'] ?? 0}')),
+                DataCell(Text('${st['lostSets'] ?? 0}')),
+              ],
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTeamsTab() {
+    if (_tournamentTeams.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.group_off, size: 48, color: Colors.white.withOpacity(0.1)),
+            const SizedBox(height: 16),
+            const Text('NO TEAMS ADDED YET', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+          ],
+        ),
+      );
+    }
+    
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _tournamentTeams.length,
+      itemBuilder: (context, index) {
+        final team = _tournamentTeams[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: kSurface,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.shield, color: kPrimary),
+              const SizedBox(width: 16),
+              Text(
+                team['name']?.toString().toUpperCase() ?? 'UNKNOWN',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
