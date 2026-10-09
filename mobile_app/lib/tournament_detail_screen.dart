@@ -26,6 +26,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   List<dynamic> _tournamentTeams = [];
   List<dynamic> _allTeams = [];
   List<dynamic> _standings = [];
+  List<dynamic> _fixtures = [];
 
   @override
   void initState() {
@@ -148,7 +149,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: Scaffold(
@@ -171,6 +172,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               labelStyle: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
               tabs: [
                 Tab(text: 'STANDINGS'),
+                Tab(text: 'FIXTURES'),
                 Tab(text: 'TEAMS'),
               ],
             ),
@@ -215,7 +217,10 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                           // TAB 1: STANDINGS
                           _buildStandingsTab(),
                           
-                          // TAB 2: TEAMS
+                          // TAB 2: FIXTURES
+                          _buildFixturesTab(),
+                          
+                          // TAB 3: TEAMS
                           _buildTeamsTab(),
                         ],
                       ),
@@ -287,6 +292,43 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           }),
         ),
       ),
+    );
+  }
+
+  Widget _buildFixturesTab() {
+    if (_fixtures.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.calendar_month, size: 48, color: Colors.white.withOpacity(0.1)),
+            const SizedBox(height: 16),
+            const Text('FIXTURES NOT GENERATED YET', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                // TODO: Fikstür oluşturma algoritması backend'de yazıldığında buraya bağlanacak.
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fixture generation is under construction!')));
+              },
+              icon: const Icon(Icons.generating_tokens, color: Colors.white, size: 18),
+              label: const Text('GENERATE FIXTURES', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimary,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), // Corporate sharp corner
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _fixtures.length,
+      itemBuilder: (context, index) {
+        return const SizedBox.shrink(); // Placeholder for future fixture cards
+      },
     );
   }
 
