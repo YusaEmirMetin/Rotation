@@ -43,4 +43,9 @@ public class Fixture {
     private Integer homeTeamScore;
 
     private Integer awayTeamScore;
+
+    @Builder.Default
+    private String status = "SCHEDULED"; // SCHEDULED, ACTIVE, FINISHED
+
+    private Long matchId; // Link to the actual live Match object if started
 }

@@ -82,17 +82,20 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     }
   }
 
-  Future<void> _startMatch() async {
+  Future<void> _startMatchFromFixture(int fixtureId) async {
     try {
       final res = await http.post(
-        Uri.parse('$kBaseUrl/api/matches/tournaments/${widget.tournament['id']}'),
+        Uri.parse('$kBaseUrl/api/fixtures/$fixtureId/start'),
       );
       if (res.statusCode == 200) {
+        final match = json.decode(utf8.decode(res.bodyBytes));
         if (mounted) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const MatchScreen()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => MatchScreen(matchId: match['id']))).then((_) => _fetchData());
         }
       } else {
-        debugPrint('Failed to start match: ${res.body}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to start match: ${res.body}')));
+        }
       }
     } catch (e) {
       debugPrint('Start Match Error: $e');
@@ -235,17 +238,6 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                               Text(widget.tournament['tournamentStatus']?.toString().toUpperCase() ?? 'ACTIVE', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
                             ],
                           ),
-                          if (_tournamentTeams.length >= 2)
-                            ElevatedButton.icon(
-                              onPressed: _startMatch,
-                              icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                              label: const Text('START MATCH', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: kTeal,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), // Corporate sharp corner
-                              ),
-                            ),
                         ],
                       ),
                     ),
@@ -365,6 +357,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
         final fix = _fixtures[index];
         final homeTeamId = fix['homeTeamId'];
         final awayTeamId = fix['awayTeamId'];
+        final status = fix['status'] ?? 'SCHEDULED';
+        final matchId = fix['matchId'];
         
         final homeTeam = _tournamentTeams.firstWhere((t) => t['id'] == homeTeamId, orElse: () => {'name': 'Unknown'});
         final awayTeam = _tournamentTeams.firstWhere((t) => t['id'] == awayTeamId, orElse: () => {'name': 'Unknown'});
@@ -386,8 +380,18 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                   Text('WEEK ${fix['tournamentWeek']}', style: const TextStyle(color: kPrimary, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(2)),
-                    child: const Text('SCHEDULED', style: TextStyle(color: kTextSub, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                    decoration: BoxDecoration(
+                      color: status == 'FINISHED' ? kTextSub.withOpacity(0.1) : 
+                             status == 'ACTIVE' ? kTeal.withOpacity(0.1) : 
+                             Colors.white.withOpacity(0.1), 
+                      borderRadius: BorderRadius.circular(2)
+                    ),
+                    child: Text(status, style: TextStyle(
+                      color: status == 'FINISHED' ? kTextSub : 
+                             status == 'ACTIVE' ? kTeal : 
+                             Colors.white70, 
+                      fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1
+                    )),
                   ),
                 ],
               ),
@@ -396,10 +400,39 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(child: Text(homeTeam['name']?.toString().toUpperCase() ?? 'UNKNOWN', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('VS', style: TextStyle(color: kTextSub, fontSize: 12, fontWeight: FontWeight.bold))),
+                  
+                  if (status == 'FINISHED')
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('${fix['homeTeamScore']} - ${fix['awayTeamScore']}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                    )
+                  else
+                    const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('VS', style: TextStyle(color: kTextSub, fontSize: 12, fontWeight: FontWeight.bold))),
+                  
                   Expanded(child: Text(awayTeam['name']?.toString().toUpperCase() ?? 'UNKNOWN', textAlign: TextAlign.right, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
                 ],
               ),
+              if (status != 'FINISHED') ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (status == 'SCHEDULED') {
+                        _startMatchFromFixture(fix['id']);
+                      } else if (status == 'ACTIVE' && matchId != null) {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => MatchScreen(matchId: matchId))).then((_) => _fetchData());
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: status == 'ACTIVE' ? kTeal : kPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Text(status == 'ACTIVE' ? 'RESUME MATCH' : 'START MATCH', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
             ],
           ),
         );

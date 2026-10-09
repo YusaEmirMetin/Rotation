@@ -5,20 +5,37 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
 import com.rotation.Rotation.entity.Fixture;
+import com.rotation.Rotation.entity.Match;
 import com.rotation.Rotation.entity.Team;
 import com.rotation.Rotation.entity.Tournament;
 import com.rotation.Rotation.repository.FixtureRepository;
 import com.rotation.Rotation.repository.TournamentRepository;
 import com.rotation.Rotation.repository.TournamentStandingRepository;
+import com.rotation.Rotation.repository.TeamRepository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.annotation.Lazy;
 import java.util.ArrayList;
 
 @Service
-@RequiredArgsConstructor
 public class FixtureService {
     private final FixtureRepository fixtureRepository;
     private final TournamentRepository tournamentRepository;
     private final TournamentStandingRepository tournamentStandingRepository;
+    private final TeamRepository teamRepository;
+    
+    private final MatchService matchService;
+
+    public FixtureService(FixtureRepository fixtureRepository, 
+                          TournamentRepository tournamentRepository, 
+                          TournamentStandingRepository tournamentStandingRepository,
+                          TeamRepository teamRepository,
+                          @Lazy MatchService matchService) {
+        this.fixtureRepository = fixtureRepository;
+        this.tournamentRepository = tournamentRepository;
+        this.tournamentStandingRepository = tournamentStandingRepository;
+        this.teamRepository = teamRepository;
+        this.matchService = matchService;
+    }
 
     public List<Fixture> getFixturesByTournamentWeek(Integer tournamentWeek) {
         return fixtureRepository.findByTournamentWeek(tournamentWeek);
@@ -107,5 +124,31 @@ public class FixtureService {
         }
 
         return fixtureRepository.saveAll(generatedFixtures);
+    }
+
+    @Transactional
+    public Match startMatchFromFixture(Long fixtureId) {
+        Fixture fixture = fixtureRepository.findById(fixtureId)
+                .orElseThrow(() -> new RuntimeException("Fixture not found"));
+
+        if (!"SCHEDULED".equals(fixture.getStatus())) {
+            throw new RuntimeException("Fixture is not SCHEDULED. Current status: " + fixture.getStatus());
+        }
+
+        Team homeTeam = teamRepository.findById(fixture.getHomeTeamId())
+                .orElseThrow(() -> new RuntimeException("Home team not found"));
+        Team awayTeam = teamRepository.findById(fixture.getAwayTeamId())
+                .orElseThrow(() -> new RuntimeException("Away team not found"));
+
+        // Start match using MatchService
+        Match match = matchService.startMatch(homeTeam.getName(), awayTeam.getName());
+        match.setTournament(fixture.getTournament());
+        
+        // Update fixture
+        fixture.setStatus("ACTIVE");
+        fixture.setMatchId(match.getId());
+        fixtureRepository.save(fixture);
+
+        return match;
     }
 }

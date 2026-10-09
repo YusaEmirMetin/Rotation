@@ -19,7 +19,8 @@ const kTeal = Color(0xFF10B981); // Emerald 500
 const kTextSub = Color(0xFF94A3B8); // Slate 400
 
 class MatchScreen extends StatefulWidget {
-  const MatchScreen({super.key});
+  final int? matchId;
+  const MatchScreen({super.key, this.matchId});
 
   @override
   State<MatchScreen> createState() => _MatchScreenState();
@@ -85,8 +86,13 @@ class _MatchScreenState extends State<MatchScreen>
       CurvedAnimation(parent: _t2GlowCtrl, curve: Curves.easeOut),
     );
 
-    _checkActiveMatch();
-    _fetchTeams(); // Takımları backend'den çek
+    if (widget.matchId != null) {
+      _showSetup = false;
+      _fetchMatchById(widget.matchId!);
+    } else {
+      _checkActiveMatch();
+      _fetchTeams();
+    }
   }
 
   @override
@@ -112,6 +118,25 @@ class _MatchScreenState extends State<MatchScreen>
         _connectWebSocket();
       }
     } catch (_) {}
+  }
+
+  Future<void> _fetchMatchById(int id) async {
+    try {
+      setState(() => _isLoading = true);
+      final res = await http.get(Uri.parse('$_baseUrl/api/matches/$id'));
+      if (res.statusCode == 200) {
+        final data = json.decode(utf8.decode(res.bodyBytes));
+        setState(() {
+          _applyMatchData(data);
+          _isLoading = false;
+        });
+        _connectWebSocket();
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (_) {
+      setState(() => _isLoading = false);
+    }
   }
 
   // Takımları API'den çek

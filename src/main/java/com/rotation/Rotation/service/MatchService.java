@@ -4,9 +4,11 @@ import com.rotation.Rotation.dto.ScoreUpdateDto;
 import com.rotation.Rotation.entity.Match;
 import com.rotation.Rotation.entity.Team;
 import com.rotation.Rotation.entity.Tournament;
+import com.rotation.Rotation.repository.FixtureRepository;
 import com.rotation.Rotation.repository.MatchRepository;
 import com.rotation.Rotation.repository.TeamRepository;
 import com.rotation.Rotation.repository.TournamentStandingRepository;
+import com.rotation.Rotation.entity.Fixture;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -25,6 +27,7 @@ public class MatchService {
     private final TeamRepository teamRepository;
     private final TournamentService tournamentService;
     private final TournamentStandingRepository tournamentStandingRepository;
+    private final FixtureRepository fixtureRepository;
 
     // Yeni maç başlat
     @Transactional
@@ -44,6 +47,10 @@ public class MatchService {
     // Aktif maçı getir
     public Optional<Match> getActiveMatch() {
         return matchRepository.findFirstByStatusOrderByCreatedAtDesc("ACTIVE");
+    }
+
+    public Optional<Match> getMatchById(Long id) {
+        return matchRepository.findById(id);
     }
 
     // Skor güncelle: team = 1 veya 2, delta = +1 veya -1
@@ -102,9 +109,20 @@ public class MatchService {
         Match saved = matchRepository.save(match);
         broadcast(saved);
 
-        // Turnuva maçıysa puan durumunu güncelle
+        // Turnuva maçıysa puan durumunu ve fikstürü güncelle
         if (match.getTournament() != null) {
             updateStandingsForMatch(match);
+            
+            // Eğer bu maç bir fikstüre aitse, fikstürü de güncelle
+            fixtureRepository.findAll().stream()
+                .filter(f -> matchId.equals(f.getMatchId()))
+                .findFirst()
+                .ifPresent(f -> {
+                    f.setStatus("FINISHED");
+                    f.setHomeTeamScore(match.getTeam1Sets());
+                    f.setAwayTeamScore(match.getTeam2Sets());
+                    fixtureRepository.save(f);
+                });
         }
 
         return saved;
