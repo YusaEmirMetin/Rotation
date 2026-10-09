@@ -258,12 +258,12 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           columns: const [
             DataColumn(label: Text('#')),
             DataColumn(label: Text('TEAM')),
-            DataColumn(label: Text('P', tooltip: 'Played')),
-            DataColumn(label: Text('W', tooltip: 'Won')),
-            DataColumn(label: Text('L', tooltip: 'Lost')),
-            DataColumn(label: Text('PTS', tooltip: 'Points')),
-            DataColumn(label: Text('SW', tooltip: 'Sets Won')),
-            DataColumn(label: Text('SL', tooltip: 'Sets Lost')),
+            DataColumn(label: Text('P'), tooltip: 'Played'),
+            DataColumn(label: Text('W'), tooltip: 'Won'),
+            DataColumn(label: Text('L'), tooltip: 'Lost'),
+            DataColumn(label: Text('PTS'), tooltip: 'Points'),
+            DataColumn(label: Text('SW'), tooltip: 'Sets Won'),
+            DataColumn(label: Text('SL'), tooltip: 'Sets Lost'),
           ],
           rows: List.generate(_standings.length, (index) {
             final st = _standings[index];
