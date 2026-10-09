@@ -10,11 +10,11 @@ const String _baseUrl = 'http://127.0.0.1:8080';
 const String _wsUrl = 'ws://127.0.0.1:8080/ws';
 
 // Renkler
-const kBg = Color(0xFF0F172A); // Slate 900
-const kSurface = Color(0xFF1E293B); // Slate 800
-const kCard = Color(0xFF334155); // Slate 700
-const kOrange = Color(0xFF3B82F6); // Professional Blue
-const kYellow = Color(0xFF60A5FA); // Blue 400
+const kBg = Color(0xFF0A0F1A); // Slate 900
+const kSurface = Color(0xFF151D2A); // Slate 800
+const kCard = Color(0xFF1E2838); // Slate 700
+const kOrange = Color(0xFFFF5A00); // Professional Blue
+const kYellow = Color(0xFFFFC000); // Blue 400
 const kTeal = Color(0xFF10B981); // Emerald 500
 const kTextSub = Color(0xFF94A3B8); // Slate 400
 

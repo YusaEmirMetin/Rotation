@@ -4,10 +4,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'tournament_detail_screen.dart';
 
-const Color kBg = Color(0xFF0F172A);
-const Color kSurface = Color(0xFF1E293B);
-const Color kCard = Color(0xFF334155);
-const Color kPrimary = Color(0xFF3B82F6);
+const Color kBg = Color(0xFF0A0F1A);
+const Color kSurface = Color(0xFF151D2A);
+const Color kCard = Color(0xFF1E2838);
+const Color kPrimary = Color(0xFFFF5A00);
 const Color kTextSub = Color(0xFF94A3B8);
 const String kBaseUrl = 'http://127.0.0.1:8080';
 

@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-const Color kBg = Color(0xFF0F172A); // Slate 900
-const Color kCard = Color(0xFF1E293B); // Slate 800
-const Color kSurface = Color(0xFF334155); // Slate 700
-const Color kOrange = Color(0xFF3B82F6); // Professional Blue
+const Color kBg = Color(0xFF0A0F1A); // Slate 900
+const Color kCard = Color(0xFF151D2A); // Slate 800
+const Color kSurface = Color(0xFF1E2838); // Slate 700
+const Color kOrange = Color(0xFFFF5A00); // Professional Blue
 const Color kTeal = Color(0xFF10B981); // Emerald Green
 const Color kTextSub = Color(0xFF94A3B8); // Slate 400
 const String kBaseUrl = 'http://127.0.0.1:8080';

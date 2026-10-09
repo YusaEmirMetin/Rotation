@@ -7,12 +7,12 @@ import 'players_screen.dart';
 import 'honours_screen.dart';
 import 'tournaments_screen.dart';
 
-const kBg = Color(0xFF0F172A); // Slate 900
-const kSurface = Color(0xFF1E293B); // Slate 800
-const kCard = Color(0xFF334155); // Slate 700
-const kOrange = Color(0xFF3B82F6); // Blue 500 (kept variable name for compatibility)
-const kYellow = Color(0xFF60A5FA); // Blue 400
-const kTeal = Color(0xFF10B981); // Emerald 500
+const kBg = Color(0xFF0A0F1A); // Deep Navy
+const kSurface = Color(0xFF151D2A); // Navy Surface
+const kCard = Color(0xFF1E2838); // Navy Card
+const kOrange = Color(0xFFFF5A00); // Volleyball Orange
+const kYellow = Color(0xFFFFC000); // Volleyball Yellow
+const kTeal = Color(0xFF10B981); // Emerald
 const kTextSub = Color(0xFF94A3B8); // Slate 400
 const String kBase = 'http://127.0.0.1:8080';
 
@@ -61,7 +61,129 @@ class RotationApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const TeamsScreen(),
+      home: const DashboardScreen(),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DASHBOARD SCREEN (NEW HOME)
+// ══════════════════════════════════════════════════════════════════════════════
+class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBg,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 40),
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [kOrange, kYellow], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.sports_volleyball, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  RichText(
+                    text: const TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'ROTA',
+                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2),
+                        ),
+                        TextSpan(
+                          text: 'TION',
+                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: kOrange, letterSpacing: 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'VOLLEYBALL MANAGEMENT SYSTEM',
+                style: TextStyle(color: kTextSub, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 2),
+              ),
+              const SizedBox(height: 40),
+              
+              // Grid
+              Expanded(
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.9,
+                  children: [
+                    _buildNavCard(context, 'TOURNAMENTS', 'Leagues & Cups', Icons.emoji_events_rounded, const TournamentsScreen()),
+                    _buildNavCard(context, 'LIVE MATCH', 'Start or Resume', Icons.scoreboard_rounded, const MatchScreen()),
+                    _buildNavCard(context, 'TEAMS', 'Manage Clubs', Icons.shield_rounded, const TeamsScreen()),
+                    _buildNavCard(context, 'PLAYERS', 'Rosters & Stats', Icons.people_alt_rounded, const PlayersScreen()),
+                    _buildNavCard(context, 'HONOURS', 'Trophies & Medals', Icons.military_tech_rounded, const HonoursScreen(titleName: 'GLOBAL RECOGNITION')),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavCard(BuildContext context, String title, String subtitle, IconData icon, Widget targetScreen) {
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => targetScreen)),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 5)),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: kCard,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: kOrange, size: 28),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 1),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: kTextSub, fontSize: 11, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -116,197 +238,92 @@ class _TeamsScreenState extends State<TeamsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-            sliver: _buildBody(),
-          ),
-        ],
+      appBar: AppBar(
+        title: const Text('TEAMS DIRECTORY', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+        backgroundColor: kBg,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: _buildBody(),
       ),
       floatingActionButton: _buildFAB(),
     );
   }
 
-  Widget _buildAppBar() {
-    return SliverAppBar(
-      expandedHeight: 310,
-      pinned: true,
-      backgroundColor: kBg,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          color: kBg,
-          padding: const EdgeInsets.fromLTRB(20, 60, 20, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Logo
-              RichText(
-                text: const TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'ROTA',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2),
-                    ),
-                    TextSpan(
-                      text: 'TION',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF3B82F6), letterSpacing: 2), // Professional Blue
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Dashboard Buttons
-              Column(
-                children: [
-                  Row(
-                    children: [
-                      _buildDashboardButton('TOURNAMENTS', Icons.tour, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TournamentsScreen()))),
-                      const SizedBox(width: 8),
-                      _buildDashboardButton('MATCHES', Icons.scoreboard, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MatchScreen()))),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildDashboardButton('PLAYERS', Icons.group, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlayersScreen()))),
-                      const SizedBox(width: 8),
-                      _buildDashboardButton('HONOURS', Icons.emoji_events, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HonoursScreen(titleName: 'GLOBAL RECOGNITION')))),
-                    ],
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Row(
-                children: [
-                  const Text(
-                    'TEAMS DIRECTORY',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.5),
-                  ),
-                  const Spacer(),
-                  if (_teams.isNotEmpty)
-                    Text(
-                      '${_teams.length} FOUND',
-                      style: const TextStyle(color: Color(0xFF94A3B8), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Container(height: 1, color: Colors.white.withOpacity(0.1)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDashboardButton(String title, IconData icon, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B1B2A),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: const Color(0xFF3B82F6), size: 20),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildBody() {
     if (_isLoading) {
-      return const SliverFillRemaining(
-        child: Center(
-          child: CircularProgressIndicator(color: kOrange, strokeWidth: 2),
-        ),
+      return const Center(
+        child: CircularProgressIndicator(color: kOrange, strokeWidth: 2),
       );
     }
 
     if (_error != null) {
-      return SliverFillRemaining(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.wifi_off_rounded, color: Colors.redAccent, size: 36),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 20),
-              Text(
-                _error!,
-                style: const TextStyle(color: kTextSub, fontSize: 15),
-                textAlign: TextAlign.center,
+              child: const Icon(Icons.wifi_off_rounded, color: Colors.redAccent, size: 36),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _error!,
+              style: const TextStyle(color: kTextSub, fontSize: 15),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: _fetchTeams,
+              icon: const Icon(Icons.refresh_rounded, color: kOrange),
+              label: const Text('Tekrar Dene', style: TextStyle(color: kOrange)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: kOrange),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: _fetchTeams,
-                icon: const Icon(Icons.refresh_rounded, color: kOrange),
-                label: const Text('Tekrar Dene', style: TextStyle(color: kOrange)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: kOrange),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
 
     if (_teams.isEmpty) {
-      return SliverFillRemaining(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.sports_volleyball, size: 48, color: Colors.white.withOpacity(0.1)),
-              const SizedBox(height: 24),
-              const Text(
-                'NO TEAMS FOUND',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Add a team to start tracking.',
-                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, letterSpacing: 0.5),
-              ),
-            ],
-          ),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.sports_volleyball, size: 48, color: Colors.white.withOpacity(0.1)),
+            const SizedBox(height: 24),
+            const Text(
+              'NO TEAMS FOUND',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Add a team to start tracking.',
+              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, letterSpacing: 0.5),
+            ),
+          ],
         ),
       );
     }
 
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) => _TeamCard(
-          team: _teams[index],
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => TeamDetailScreen(team: _teams[index])),
-          ),
+    return ListView.builder(
+      itemCount: _teams.length,
+      padding: const EdgeInsets.only(top: 16, bottom: 100),
+      itemBuilder: (context, index) => _TeamCard(
+        team: _teams[index],
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => TeamDetailScreen(team: _teams[index])),
         ),
-        childCount: _teams.length,
       ),
     );
   }
@@ -314,7 +331,7 @@ class _TeamsScreenState extends State<TeamsScreen> {
   Widget _buildFAB() {
     return FloatingActionButton.extended(
       onPressed: _openAddTeamSheet,
-      backgroundColor: const Color(0xFF3B82F6),
+      backgroundColor: kOrange,
       foregroundColor: Colors.white,
       elevation: 0,
       icon: const Icon(Icons.add, size: 20),
@@ -795,7 +812,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openAddPlayerSheet,
-        backgroundColor: const Color(0xFF3B82F6), // Professional Blue
+        backgroundColor: kOrange, // Professional Orange
         foregroundColor: Colors.white,
         elevation: 0,
         icon: const Icon(Icons.person_add, size: 20),
@@ -956,7 +973,7 @@ class _PlayerCard extends StatelessWidget {
   Color _valueColor(double val) {
     if (val >= 90) return const Color(0xFF10B981); // Green
     if (val >= 80) return const Color(0xFF34D399); // Light Green
-    if (val >= 70) return const Color(0xFF60A5FA); // Blue
+    if (val >= 70) return const Color(0xFFFFC000); // Blue
     if (val >= 60) return const Color(0xFFFBBF24); // Yellow
     return const Color(0xFFEF4444); // Red
   }

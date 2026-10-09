@@ -5,7 +5,7 @@ import 'dart:convert';
 
 const Color kBg = Color(0xFF0F0F1A);
 const Color kCard = Color(0xFF1B1B2A);
-const Color kAccent = Color(0xFF3B82F6); // Professional blue
+const Color kAccent = Color(0xFFFF5A00); // Professional blue
 const Color kTextSub = Color(0xFF94A3B8);
 const String kBaseUrl = 'http://127.0.0.1:8080';
 
@@ -273,7 +273,7 @@ class _AddHonourSheetState extends State<_AddHonourSheet> {
             child: ElevatedButton(
               onPressed: _isLoading ? null : _submit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3B82F6), // kAccent
+                backgroundColor: const Color(0xFFFF5A00), // kAccent
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
               ),
               child: _isLoading
