@@ -1,0 +1,7 @@
+CREATE TABLE teams (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    coach_name VARCHAR(255),
+    established_year INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

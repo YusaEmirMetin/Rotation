@@ -1,0 +1,9 @@
+CREATE TABLE matches (
+    id BIGSERIAL PRIMARY KEY,
+    team1_name VARCHAR(100) NOT NULL,
+    team2_name VARCHAR(100) NOT NULL,
+    team1_score INTEGER NOT NULL DEFAULT 0,
+    team2_score INTEGER NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
