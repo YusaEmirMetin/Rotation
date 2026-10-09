@@ -9,6 +9,7 @@ import com.rotation.Rotation.entity.Match;
 import com.rotation.Rotation.entity.Team;
 import com.rotation.Rotation.entity.Tournament;
 import com.rotation.Rotation.repository.FixtureRepository;
+import com.rotation.Rotation.repository.MatchRepository;
 import com.rotation.Rotation.repository.TournamentRepository;
 import com.rotation.Rotation.repository.TournamentStandingRepository;
 import com.rotation.Rotation.repository.TeamRepository;
@@ -22,6 +23,7 @@ public class FixtureService {
     private final TournamentRepository tournamentRepository;
     private final TournamentStandingRepository tournamentStandingRepository;
     private final TeamRepository teamRepository;
+    private final MatchRepository matchRepository;
     
     private final MatchService matchService;
 
@@ -29,11 +31,13 @@ public class FixtureService {
                           TournamentRepository tournamentRepository, 
                           TournamentStandingRepository tournamentStandingRepository,
                           TeamRepository teamRepository,
+                          MatchRepository matchRepository,
                           @Lazy MatchService matchService) {
         this.fixtureRepository = fixtureRepository;
         this.tournamentRepository = tournamentRepository;
         this.tournamentStandingRepository = tournamentStandingRepository;
         this.teamRepository = teamRepository;
+        this.matchRepository = matchRepository;
         this.matchService = matchService;
     }
 
@@ -143,6 +147,7 @@ public class FixtureService {
         // Start match using MatchService
         Match match = matchService.startMatch(homeTeam.getName(), awayTeam.getName());
         match.setTournament(fixture.getTournament());
+        match = matchRepository.save(match);
         
         // Update fixture
         fixture.setStatus("ACTIVE");
