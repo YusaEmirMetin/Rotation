@@ -9,6 +9,7 @@ import com.rotation.Rotation.repository.MatchRepository;
 import com.rotation.Rotation.repository.TeamRepository;
 import com.rotation.Rotation.repository.TournamentStandingRepository;
 import com.rotation.Rotation.entity.Fixture;
+import com.rotation.Rotation.entity.TournamentStanding;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
