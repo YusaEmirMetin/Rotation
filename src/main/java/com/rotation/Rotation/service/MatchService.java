@@ -6,6 +6,7 @@ import com.rotation.Rotation.entity.Team;
 import com.rotation.Rotation.entity.Tournament;
 import com.rotation.Rotation.repository.MatchRepository;
 import com.rotation.Rotation.repository.TeamRepository;
+import com.rotation.Rotation.repository.TournamentStandingRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -23,6 +24,7 @@ public class MatchService {
     private final SimpMessagingTemplate messagingTemplate;
     private final TeamRepository teamRepository;
     private final TournamentService tournamentService;
+    private final TournamentStandingRepository tournamentStandingRepository;
 
     // Yeni maç başlat
     @Transactional
@@ -91,10 +93,67 @@ public class MatchService {
     public Match finishMatch(Long matchId) {
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new IllegalArgumentException("Maç bulunamadı: " + matchId));
+        
+        if ("FINISHED".equals(match.getStatus())) {
+            return match; // Zaten bitmişse tekrar hesaplama
+        }
+        
         match.setStatus("FINISHED");
         Match saved = matchRepository.save(match);
         broadcast(saved);
+
+        // Turnuva maçıysa puan durumunu güncelle
+        if (match.getTournament() != null) {
+            updateStandingsForMatch(match);
+        }
+
         return saved;
+    }
+
+    private void updateStandingsForMatch(Match match) {
+        Long tourId = match.getTournament().getId();
+        
+        // Takım 1 Puan Durumunu Getir
+        tournamentStandingRepository.findByTournamentIdAndTeamName(tourId, match.getTeam1Name()).ifPresent(st1 -> {
+            st1.setPlayedMatches(st1.getPlayedMatches() + 1);
+            st1.setWonSets(st1.getWonSets() + match.getTeam1Sets());
+            st1.setLostSets(st1.getLostSets() + match.getTeam2Sets());
+            st1.setSetDifference(st1.getWonSets() - st1.getLostSets());
+            
+            // Eğer maçı Team 1 kazandıysa
+            if (match.getTeam1Sets() > match.getTeam2Sets()) {
+                st1.setWins(st1.getWins() + 1);
+                // 3-0 veya 3-1 galibiyet = 3 puan, 3-2 galibiyet = 2 puan
+                if (match.getTeam2Sets() <= 1) st1.setPoints(st1.getPoints() + 3);
+                else st1.setPoints(st1.getPoints() + 2);
+            } else {
+                st1.setLosses(st1.getLosses() + 1);
+                // 3-2 mağlubiyet = 1 puan
+                if (match.getTeam1Sets() == 2) st1.setPoints(st1.getPoints() + 1);
+            }
+            tournamentStandingRepository.save(st1);
+        });
+
+        // Takım 2 Puan Durumunu Getir
+        tournamentStandingRepository.findByTournamentIdAndTeamName(tourId, match.getTeam2Name()).ifPresent(st2 -> {
+            st2.setPlayedMatches(st2.getPlayedMatches() + 1);
+            st2.setWonSets(st2.getWonSets() + match.getTeam2Sets());
+            st2.setLostSets(st2.getLostSets() + match.getTeam1Sets());
+            st2.setSetDifference(st2.getWonSets() - st2.getLostSets());
+            
+            // Eğer maçı Team 2 kazandıysa
+            if (match.getTeam2Sets() > match.getTeam1Sets()) {
+                st2.setWins(st2.getWins() + 1);
+                // 3-0 veya 3-1 galibiyet = 3 puan, 3-2 galibiyet = 2 puan
+                if (match.getTeam1Sets() <= 1) st2.setPoints(st2.getPoints() + 3);
+                else st2.setPoints(st2.getPoints() + 2);
+            } else {
+                st2.setLosses(st2.getLosses() + 1);
+                // 3-2 mağlubiyet = 1 puan
+                if (match.getTeam2Sets() == 2) st2.setPoints(st2.getPoints() + 1);
+            }
+            tournamentStandingRepository.save(st2);
+        });
     }
 
     @Transactional

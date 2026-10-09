@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface TournamentStandingRepository extends JpaRepository<TournamentStanding, Long> {
     List<TournamentStanding> findByTournamentIdOrderByPointsDesc(Long tournamentId);
+    java.util.Optional<TournamentStanding> findByTournamentIdAndTeamName(Long tournamentId, String teamName);
 }
