@@ -86,8 +86,9 @@ public class MatchService {
         }
 
         // Maç bitti mi kontrol et (İlk 3 set alan kazanır)
-        if (match.getTeam1Sets() == 3 || match.getTeam2Sets() == 3) {
-            match.setStatus("FINISHED");
+        if (!"FINISHED".equals(match.getStatus()) && (match.getTeam1Sets() == 3 || match.getTeam2Sets() == 3)) {
+            matchRepository.save(match);
+            return finishMatch(match.getId());
         }
 
         Match saved = matchRepository.save(match);
