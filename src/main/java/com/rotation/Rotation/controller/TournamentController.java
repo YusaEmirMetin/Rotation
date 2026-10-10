@@ -65,4 +65,9 @@ public class TournamentController {
     public void deleteTournament(@RequestBody Tournament tournament) {
         tournamentService.deleteTournament(tournament.getId());
     }
+
+    @DeleteMapping("/{tournamentId}/teams/{teamId}")
+    public Tournament removeTeamFromTournament(@PathVariable Long tournamentId, @PathVariable Long teamId) {
+        return tournamentService.removeTeamFromTournament(tournamentId, teamId);
+    }
 }

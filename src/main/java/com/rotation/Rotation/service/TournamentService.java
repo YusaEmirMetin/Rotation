@@ -73,4 +73,21 @@ public class TournamentService {
         return savedTournament;
     }
 
+    public Tournament removeTeamFromTournament(Long tournamentId, Long teamId) {
+        Tournament existingTournament = getTournamentById(tournamentId);
+
+        // 1. Takımı turnuvadan çıkart
+        existingTournament.getTeams().removeIf(t -> t.getId().equals(teamId));
+        Tournament savedTournament = tournamentRepository.save(existingTournament);
+
+        // 2. Takıma ait puan durumunu sil
+        tournamentStandingRepository.findByTournamentIdOrderByPointsDesc(tournamentId)
+                .stream()
+                .filter(standing -> standing.getTeam().getId().equals(teamId))
+                .findFirst()
+                .ifPresent(tournamentStandingRepository::delete);
+
+        return savedTournament;
+    }
+
 }
