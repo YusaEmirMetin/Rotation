@@ -137,6 +137,26 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     );
   }
 
+  Future<void> _removeTeamFromTournament(int teamId) async {
+    setState(() => _isLoading = true);
+    try {
+      final res = await http.delete(
+        Uri.parse('$kBaseUrl/api/tournaments/${widget.tournament['id']}/teams/$teamId'),
+      );
+      if (res.statusCode == 200) {
+        _fetchData(); // Listeyi yenile
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to remove team: ${res.body}')));
+        }
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint('Remove Team Error: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _startMatchFromFixture(int fixtureId) async {
     try {
       final res = await http.post(
@@ -593,9 +613,36 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
             children: [
               const Icon(Icons.shield, color: kPrimary),
               const SizedBox(width: 16),
-              Text(
-                team['name']?.toString().toUpperCase() ?? 'UNKNOWN',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              Expanded(
+                child: Text(
+                  team['name']?.toString().toUpperCase() ?? 'UNKNOWN',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: kSurface,
+                      title: const Text('REMOVE TEAM', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                      content: Text('Are you sure you want to remove ${team['name']} from this tournament? Their standings will also be deleted.', style: const TextStyle(color: Colors.white)),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL', style: TextStyle(color: kTextSub))),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _removeTeamFromTournament(team['id']);
+                          },
+                          child: const Text('REMOVE', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),

@@ -47,11 +47,11 @@ public class TournamentService {
         Tournament existingTournament = getTournamentById(tournamentId);
         Team existingTeam = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
-        
+
         // Takımı turnuvaya ekle
         existingTournament.getTeams().add(existingTeam);
         Tournament savedTournament = tournamentRepository.save(existingTournament);
-        
+
         // Takım eklendiği an puan tablosunda (Standings) 0 puanla başlat
         TournamentStanding standing = TournamentStanding.builder()
                 .tournament(savedTournament)
@@ -69,7 +69,8 @@ public class TournamentService {
                 .setDifference(0)
                 .build();
         tournamentStandingRepository.save(standing);
-        
+
         return savedTournament;
     }
+
 }
