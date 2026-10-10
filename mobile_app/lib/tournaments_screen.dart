@@ -111,7 +111,11 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                                 MaterialPageRoute(
                                   builder: (context) => TournamentDetailScreen(tournament: t),
                                 ),
-                              );
+                              ).then((deleted) {
+                                if (deleted == true) {
+                                  _fetchTournaments();
+                                }
+                              });
                             },
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 12),

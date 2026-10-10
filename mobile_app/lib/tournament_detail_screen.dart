@@ -187,6 +187,54 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     );
   }
 
+  Future<void> _confirmDeleteTournament() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kSurface,
+        title: const Text('DELETE TOURNAMENT', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to delete this tournament? This action cannot be undone and will delete all associated standings and fixtures.', style: TextStyle(color: Colors.white)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('CANCEL', style: TextStyle(color: kTextSub)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text('DELETE', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      _deleteTournament();
+    }
+  }
+
+  Future<void> _deleteTournament() async {
+    setState(() => _isLoading = true);
+    try {
+      final res = await http.delete(
+        Uri.parse('$kBaseUrl/api/tournaments'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(widget.tournament),
+      );
+      if (res.statusCode == 200) {
+        if (mounted) Navigator.pop(context, true); // Return to previous screen
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete: ${res.statusCode}')));
+        }
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint('Delete Error: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -206,6 +254,12 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               widget.tournament['tournamentName']?.toString().toUpperCase() ?? 'DETAILS',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                onPressed: _confirmDeleteTournament,
+              ),
+            ],
             bottom: const TabBar(
               indicatorColor: kPrimary,
               labelColor: kPrimary,
