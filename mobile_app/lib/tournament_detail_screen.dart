@@ -666,6 +666,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
         );
       },
     );
+  }
+
   Widget _buildPlayersTab() {
     // Sadece turnuvadaki takımların oyuncularını filtrele
     final tournamentTeamIds = _tournamentTeams.map((t) => t['id']).toSet();

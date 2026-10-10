@@ -89,7 +89,6 @@ class _MatchScreenState extends State<MatchScreen>
       _fetchMatchById(widget.matchId!);
     } else {
       _checkActiveMatch();
-      _fetchTeams();
     }
   }
 
@@ -247,8 +246,8 @@ class _MatchScreenState extends State<MatchScreen>
       _team1Sets = 0;
       _team2Sets = 0;
       _status = 'ACTIVE';
-      _selectedTeam1 = null;
-      _selectedTeam2 = null;
+      _team1Ctrl.clear();
+      _team2Ctrl.clear();
     });
   }
 
