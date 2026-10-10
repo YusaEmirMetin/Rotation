@@ -121,17 +121,17 @@ class DashboardScreen extends StatelessWidget {
               
               // Grid
               Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.9,
+                child: Column(
                   children: [
-                    _buildNavCard(context, 'TOURNAMENTS', 'Leagues & Cups', Icons.emoji_events_rounded, const TournamentsScreen()),
-                    _buildNavCard(context, 'LIVE MATCH', 'Start or Resume', Icons.scoreboard_rounded, const MatchScreen()),
-                    _buildNavCard(context, 'TEAMS', 'Manage Clubs', Icons.shield_rounded, const TeamsScreen()),
-                    _buildNavCard(context, 'PLAYERS', 'Rosters & Stats', Icons.people_alt_rounded, const PlayersScreen()),
-                    _buildNavCard(context, 'HONOURS', 'Trophies & Medals', Icons.military_tech_rounded, const HonoursScreen(titleName: 'GLOBAL RECOGNITION')),
+                    SizedBox(
+                      width: double.infinity,
+                      child: _buildNavCard(context, 'TOURNAMENTS', 'Leagues & Cups', Icons.emoji_events_rounded, const TournamentsScreen()),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: _buildNavCard(context, 'QUICK MATCH', 'Start a custom match', Icons.scoreboard_rounded, const MatchScreen()),
+                    ),
                   ],
                 ),
               ),

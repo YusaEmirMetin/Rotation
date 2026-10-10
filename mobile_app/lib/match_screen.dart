@@ -42,11 +42,9 @@ class _MatchScreenState extends State<MatchScreen>
   int _team2Sets = 0;
   String _status = 'ACTIVE';
 
-  // Takım seçici için yeni state
-  List<dynamic> _availableTeams = [];
-  dynamic _selectedTeam1;   // seçilen 1. takım objesi
-  dynamic _selectedTeam2;   // seçilen 2. takım objesi
-  bool _isLoadingTeams = false;
+  // Takım isimleri için Text Controller
+  final TextEditingController _team1Ctrl = TextEditingController();
+  final TextEditingController _team2Ctrl = TextEditingController();
 
   // ─── Animasyonlar ───────────────────────────────────────────────────────
   late AnimationController _t1BounceCtrl;
@@ -139,40 +137,19 @@ class _MatchScreenState extends State<MatchScreen>
     }
   }
 
-  // Takımları API'den çek
-  Future<void> _fetchTeams() async {
-    setState(() => _isLoadingTeams = true);
-    try {
-      final res = await http.get(Uri.parse('$_baseUrl/api/teams'));
-      if (res.statusCode == 200) {
-        setState(() {
-          _availableTeams = json.decode(utf8.decode(res.bodyBytes));
-          _isLoadingTeams = false;
-        });
-      }
-    } catch (_) {
-      setState(() => _isLoadingTeams = false);
-    }
-  }
-
-  // Seçilen takım ID'leriyle maç başlat
-  Future<void> _startMatchFromTeams() async {
-    if (_selectedTeam1 == null || _selectedTeam2 == null) {
-      setState(() => _error = 'İki takım seçmem lazım');
-      return;
-    }
-    if (_selectedTeam1['id'] == _selectedTeam2['id']) {
-      setState(() => _error = 'Farklı iki takım seç');
+  Future<void> _startMatchFromNames() async {
+    if (_team1Ctrl.text.trim().isEmpty || _team2Ctrl.text.trim().isEmpty) {
+      setState(() => _error = 'İki takım ismi girmelisin');
       return;
     }
     setState(() { _isLoading = true; _error = null; });
     try {
       final res = await http.post(
-        Uri.parse('$_baseUrl/api/matches/start-teams'),
+        Uri.parse('$_baseUrl/api/matches/start'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'team1Id': _selectedTeam1['id'],
-          'team2Id': _selectedTeam2['id'],
+          'team1Name': _team1Ctrl.text.trim(),
+          'team2Name': _team2Ctrl.text.trim(),
         }),
       );
       if (res.statusCode == 200) {
@@ -364,9 +341,7 @@ class _MatchScreenState extends State<MatchScreen>
 
                     // Takım 1 kutusu
                     _SetupTeamBox(
-                      teams: _availableTeams,
-                      selectedTeam: _selectedTeam1,
-                      onChanged: (val) => setState(() => _selectedTeam1 = val),
+                      controller: _team1Ctrl,
                       label: 'Ev Sahibi',
                       number: '1',
                       color: kOrange,
@@ -404,9 +379,7 @@ class _MatchScreenState extends State<MatchScreen>
 
                     // Takım 2 kutusu
                     _SetupTeamBox(
-                      teams: _availableTeams,
-                      selectedTeam: _selectedTeam2,
-                      onChanged: (val) => setState(() => _selectedTeam2 = val),
+                      controller: _team2Ctrl,
                       label: 'Deplasman',
                       number: '2',
                       color: kTeal,
@@ -439,7 +412,7 @@ class _MatchScreenState extends State<MatchScreen>
                       width: double.infinity,
                       height: 58,
                       child: ElevatedButton(
-                        onPressed: _isLoading || _isLoadingTeams ? null : _startMatchFromTeams,
+                        onPressed: _isLoading ? null : _startMatchFromNames,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           elevation: 0,
@@ -1035,18 +1008,14 @@ class _NetLinePainter extends CustomPainter {
 
 // ── Setup Team Box ───────────────────────────────────────────────────────────
 class _SetupTeamBox extends StatelessWidget {
-  final List<dynamic> teams;
-  final dynamic selectedTeam;
-  final ValueChanged<dynamic> onChanged;
+  final TextEditingController controller;
   final String label;
   final String number;
   final Color color;
   final List<Color> gradientColors;
 
   const _SetupTeamBox({
-    required this.teams,
-    required this.selectedTeam,
-    required this.onChanged,
+    required this.controller,
     required this.label,
     required this.number,
     required this.color,
@@ -1093,14 +1062,11 @@ class _SetupTeamBox extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          DropdownButtonFormField<dynamic>(
-            value: selectedTeam,
-            onChanged: onChanged,
-            dropdownColor: const Color(0xFF1A1A35),
-            icon: Icon(Icons.keyboard_arrow_down_rounded, color: color),
+          TextField(
+            controller: controller,
             style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
             decoration: InputDecoration(
-              hintText: 'Takım seç...',
+              hintText: 'Takım Adı Girin',
               hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 16, fontWeight: FontWeight.w400),
               filled: true,
               fillColor: Colors.white.withOpacity(0.06),
@@ -1118,12 +1084,6 @@ class _SetupTeamBox extends StatelessWidget {
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             ),
-            items: teams.map((team) {
-              return DropdownMenuItem<dynamic>(
-                value: team,
-                child: Text(team['name']),
-              );
-            }).toList(),
           ),
         ],
       ),

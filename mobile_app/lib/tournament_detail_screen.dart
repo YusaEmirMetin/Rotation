@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'match_screen.dart';
+import 'honours_screen.dart';
 
 const Color kBg = Color(0xFF0A0F1A);
 const Color kSurface = Color(0xFF151D2A);
@@ -27,6 +28,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   List<dynamic> _allTeams = [];
   List<dynamic> _standings = [];
   List<dynamic> _fixtures = [];
+  List<dynamic> _allPlayers = [];
 
   @override
   void initState() {
@@ -49,6 +51,9 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       // 4. Fikstürü al
       final resFixtures = await http.get(Uri.parse('$kBaseUrl/api/fixtures/tournament/${widget.tournament['id']}'));
 
+      // 5. Oyuncuları al (Tüm oyunculardan filtreleyeceğiz)
+      final resPlayers = await http.get(Uri.parse('$kBaseUrl/api/teams/1/players/all'));
+
       if (resTour.statusCode == 200 && resTeams.statusCode == 200) {
         final tourData = json.decode(utf8.decode(resTour.bodyBytes));
         setState(() {
@@ -59,6 +64,9 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           }
           if (resFixtures.statusCode == 200) {
             _fixtures = json.decode(utf8.decode(resFixtures.bodyBytes));
+          }
+          if (resPlayers.statusCode == 200) {
+            _allPlayers = json.decode(utf8.decode(resPlayers.bodyBytes));
           }
           _isLoading = false;
         });
@@ -326,7 +334,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 5,
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: Scaffold(
@@ -353,10 +361,13 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               labelColor: kPrimary,
               unselectedLabelColor: kTextSub,
               labelStyle: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+              isScrollable: true,
               tabs: [
                 Tab(text: 'STANDINGS'),
                 Tab(text: 'FIXTURES'),
                 Tab(text: 'TEAMS'),
+                Tab(text: 'PLAYERS'),
+                Tab(text: 'HONOURS'),
               ],
             ),
           ),
@@ -394,6 +405,12 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                           
                           // TAB 3: TEAMS
                           _buildTeamsTab(),
+
+                          // TAB 4: PLAYERS
+                          _buildPlayersTab(),
+
+                          // TAB 5: HONOURS
+                          HonoursScreen(titleName: widget.tournament['tournamentName'] ?? 'TOURNAMENT HONOURS'),
                         ],
                       ),
                     ),
@@ -645,6 +662,86 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                 },
               ),
             ],
+          ),
+        );
+      },
+    );
+  Widget _buildPlayersTab() {
+    // Sadece turnuvadaki takımların oyuncularını filtrele
+    final tournamentTeamIds = _tournamentTeams.map((t) => t['id']).toSet();
+    final tournamentPlayers = _allPlayers.where((p) {
+      final t = p['team'];
+      if (t == null) return false;
+      return tournamentTeamIds.contains(t['id']);
+    }).toList();
+
+    // Playerları skora göre sırala
+    tournamentPlayers.sort((a, b) {
+      final valA = (a['playerValue'] ?? 0.0) as double;
+      final valB = (b['playerValue'] ?? 0.0) as double;
+      return valB.compareTo(valA); // Büyükten küçüğe
+    });
+
+    if (tournamentPlayers.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.people_alt_rounded, size: 48, color: Colors.white.withOpacity(0.1)),
+            const SizedBox(height: 16),
+            const Text('NO PLAYERS FOUND IN THIS TOURNAMENT', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: tournamentPlayers.length,
+      itemBuilder: (context, index) {
+        final player = tournamentPlayers[index];
+        final teamName = player['team'] != null ? player['team']['name'] : 'Unknown';
+        
+        final mockPoints = ((player['playerValue'] ?? 1.0) * 15).round();
+        final mockErrors = ((player['playerValue'] ?? 1.0) * 3).round();
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: kSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: index < 3 ? kPrimary : kBg,
+              child: Text(
+                '#${index + 1}',
+                style: TextStyle(color: index < 3 ? Colors.white : kTextSub, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ),
+            title: Text(
+              '${player['firstName']} ${player['lastName']}'.toUpperCase(),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              '$teamName | ${player['position']}',
+              style: const TextStyle(color: kTextSub, fontSize: 12),
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '$mockPoints PTS',
+                  style: const TextStyle(color: kTeal, fontWeight: FontWeight.w900, fontSize: 14),
+                ),
+                Text(
+                  '$mockErrors ERR',
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
           ),
         );
       },
