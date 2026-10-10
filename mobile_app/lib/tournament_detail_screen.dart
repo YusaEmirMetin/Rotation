@@ -82,6 +82,61 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     }
   }
 
+  Future<void> _createNewTeamForTournament(String teamName) async {
+    setState(() => _isLoading = true);
+    try {
+      final res = await http.post(
+        Uri.parse('$kBaseUrl/api/teams'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'name': teamName}),
+      );
+      if (res.statusCode == 201 || res.statusCode == 200) {
+        final newTeam = json.decode(utf8.decode(res.bodyBytes));
+        await _addTeamToTournament(newTeam['id']);
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint('Create Team Error: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showCreateTeamDialog() {
+    final nameCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kSurface,
+        title: const Text('CREATE NEW TEAM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
+        content: TextField(
+          controller: nameCtrl,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Enter team name',
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+            filled: true,
+            fillColor: kBg,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL', style: TextStyle(color: kTextSub))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: kPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
+            onPressed: () {
+              if (nameCtrl.text.isNotEmpty) {
+                Navigator.pop(ctx);
+                _createNewTeamForTournament(nameCtrl.text);
+              }
+            },
+            child: const Text('CREATE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _startMatchFromFixture(int fixtureId) async {
     try {
       final res = await http.post(
@@ -153,7 +208,20 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('ADD TEAM TO TOURNAMENT', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('SELECT TEAM', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showCreateTeamDialog();
+                  },
+                  icon: const Icon(Icons.add, color: kPrimary, size: 16),
+                  label: const Text('CREATE NEW', style: TextStyle(color: kPrimary, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             if (availableTeams.isEmpty)
               const Padding(

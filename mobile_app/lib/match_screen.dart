@@ -222,8 +222,7 @@ class _MatchScreenState extends State<MatchScreen>
     try {
       final res = await http.post(Uri.parse('$_baseUrl/api/matches/$_matchId/finish'));
       if (res.statusCode == 200) {
-        final data = json.decode(utf8.decode(res.bodyBytes));
-        setState(() => _applyMatchData(data));
+        if (mounted) Navigator.pop(context, true); // Maç ekranını kapatıp önceki sayfaya dön
       }
     } catch (_) {}
   }
