@@ -45,12 +45,6 @@ public class MatchController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Match> getMatchById(@PathVariable Long id) {
-        return matchService.getMatchById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
 
     // POST /api/matches/{id}/score
     // Body: { "team": 1, "delta": 1 } → team 1'e +1 puan

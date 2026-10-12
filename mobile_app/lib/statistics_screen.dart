@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-const Color kBg = Color(0xFF0A0F1A); // Slate 900
+const Color kBg = Color(0xFF0D0D0D);
+const Color kGradientTop = Color(0xFF093122); // Slate 900
 const Color kCard = Color(0xFF151D2A); // Slate 800
 const Color kSurface = Color(0xFF1E2838); // Slate 700
 const Color kOrange = Color(0xFFFF5A00); // Professional Blue
-const Color kTeal = Color(0xFF10B981); // Emerald Green
+const Color kTeal = Color(0xFF34D399); // Emerald Green
 const Color kTextSub = Color(0xFF94A3B8); // Slate 400
 const String kBaseUrl = 'http://127.0.0.1:8080';
 
@@ -81,10 +83,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         // İşlem başarılı olunca verileri tekrar çekerek ekrandaki sayıları güncelleyelim
         _fetchData();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hata oluştu!')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('error_occurred'.tr)));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bağlantı hatası!')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('connection_error'.tr)));
     }
   }
 
@@ -93,7 +95,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: kBg,
+              backgroundColor: kBg,
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,8 +120,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'İstatistik Antrenörü',
+                        Text(
+                          'stat_coach'.tr,
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
                         ),
                         Text(
@@ -185,9 +187,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                           // İstatistikleri göster
                                           Row(
                                             children: [
-                                              Text('Sayı: $points', style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                                              Text(('points_label'.tr + '$points'), style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
                                               const SizedBox(width: 12),
-                                              Text('Hata: $errors', style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                                              Text(('errors_label'.tr + '$errors'), style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
                                             ],
                                           ),
                                         ],
@@ -198,7 +200,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                       onTap: () => _recordAction(playerId, 'point'),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                        decoration: BoxDecoration(color: Colors.green.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                                        decoration: BoxDecoration(color: Colors.green.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
                                         child: const Text('+', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
                                       ),
                                     ),
@@ -208,7 +210,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                       onTap: () => _recordAction(playerId, 'error'),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                        decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                                        decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
                                         child: const Text('-', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 18)),
                                       ),
                                     ),

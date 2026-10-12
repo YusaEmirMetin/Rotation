@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/services.dart';
@@ -38,13 +39,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         });
       } else {
         setState(() {
-          _error = 'Geçmiş alınamadı: ${res.statusCode}';
+          _error = 'error_occurred'.tr + ' (${res.statusCode})';
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _error = 'Bağlantı hatası: $e';
+        _error = 'connection_error'.tr + ' $e';
         _isLoading = false;
       });
     }
@@ -55,7 +56,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: kBg,
+              backgroundColor: kBg,
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,8 +78,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       onPressed: () => Navigator.pop(context),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
-                      'Maç Geçmişi',
+                    Text(
+                      'match_history'.tr,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
@@ -92,13 +93,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // İçerik
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: kOrange))
+                    ? Center(child: CircularProgressIndicator(color: kOrange))
                     : _error.isNotEmpty
                         ? Center(child: Text(_error, style: const TextStyle(color: Colors.red)))
                         : _matches.isEmpty
-                            ? const Center(
+                            ? Center(
                                 child: Text(
-                                  'Henüz bitmiş maç yok.',
+                                  'no_finished_matches'.tr,
                                   style: TextStyle(color: kTextSub, fontSize: 16),
                                 ),
                               )
@@ -127,7 +128,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: ${res.statusCode}')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Bağlantı hatası: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('connection_error'.tr + ': $e')));
     }
   }
 
@@ -171,7 +172,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   color: Colors.white.withOpacity(0.06),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('MAÇ SONUCU', style: TextStyle(color: kTextSub, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                child: Text('match_result'.tr, style: TextStyle(color: kTextSub, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
               ),
               // Sil butonu
               GestureDetector(

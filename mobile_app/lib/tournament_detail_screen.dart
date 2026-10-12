@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'match_screen.dart';
 import 'honours_screen.dart';
 
-const Color kBg = Color(0xFF0A0F1A);
-const Color kSurface = Color(0xFF151D2A);
-const Color kCard = Color(0xFF1E2838);
-const Color kPrimary = Color(0xFFFF5A00);
-const Color kTeal = Color(0xFF10B981);
+const Color kBg = Color(0xFF0D0D0D);
+const Color kSurface = Color(0xFF1E1E1E);
+const Color kCard = Color(0xFF2A2A2A);
+const Color kPrimary = Color(0xFF34D399);
+const Color kTeal = Color(0xFF34D399);
 const Color kTextSub = Color(0xFF94A3B8);
 const String kBaseUrl = 'http://127.0.0.1:8080';
 
@@ -29,11 +30,36 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   List<dynamic> _standings = [];
   List<dynamic> _fixtures = [];
   List<dynamic> _allPlayers = [];
+  String _currentStatus = 'UPCOMING';
 
   @override
   void initState() {
     super.initState();
+    _currentStatus = widget.tournament['tournamentStatus']?.toString().toUpperCase() ?? 'UPCOMING';
     _fetchData();
+  }
+
+  Future<void> _updateTournamentStatus(String newStatus) async {
+    try {
+      final res = await http.put(
+        Uri.parse('$kBaseUrl/api/tournaments/${widget.tournament['id']}/status/$newStatus'),
+      );
+      if (res.statusCode == 200) {
+        setState(() {
+          _currentStatus = newStatus;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: kPrimary,
+              content: Text('tournament_started'.tr, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Status update error: $e');
+    }
   }
 
   Future<void> _fetchData() async {
@@ -57,6 +83,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       if (resTour.statusCode == 200 && resTeams.statusCode == 200) {
         final tourData = json.decode(utf8.decode(resTour.bodyBytes));
         setState(() {
+          _currentStatus = tourData['tournamentStatus']?.toString().toUpperCase() ?? _currentStatus;
           _tournamentTeams = tourData['teams'] ?? [];
           _allTeams = json.decode(utf8.decode(resTeams.bodyBytes));
           if (resStandings.statusCode == 200) {
@@ -116,31 +143,351 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: kSurface,
-        title: const Text('CREATE NEW TEAM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
+        title: Text('create_new_team'.tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
         content: TextField(
           controller: nameCtrl,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            hintText: 'Enter team name',
+            hintText: 'enter_team_name'.tr,
             hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
             filled: true,
             fillColor: kBg,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL', style: TextStyle(color: kTextSub))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('cancel'.tr, style: const TextStyle(color: kTextSub))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: kPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
+            style: ElevatedButton.styleFrom(backgroundColor: kPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
             onPressed: () {
               if (nameCtrl.text.isNotEmpty) {
                 Navigator.pop(ctx);
                 _createNewTeamForTournament(nameCtrl.text);
               }
             },
-            child: const Text('CREATE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('create'.tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showAddPlayerToTeamDialog(Map<String, dynamic> team) {
+    final firstCtrl = TextEditingController();
+    final lastCtrl = TextEditingController();
+    final numberCtrl = TextEditingController();
+    final heightCtrl = TextEditingController();
+    String selectedPos = 'OUTSIDE_HITTER';
+
+    final positions = [
+      {'val': 'OUTSIDE_HITTER', 'label': 'outside_hitter'.tr},
+      {'val': 'SETTER', 'label': 'setter'.tr},
+      {'val': 'MIDDLE_BLOCKER', 'label': 'middle_blocker'.tr},
+      {'val': 'OPPOSITE_HITTER', 'label': 'opposite_hitter'.tr},
+      {'val': 'LIBERO', 'label': 'libero'.tr},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: kBg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: kPrimary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.person_add_rounded, color: kPrimary, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('add_player_to_team'.tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(team['name'] ?? '', style: TextStyle(color: kPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: kTextSub),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: firstCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'first_name'.tr,
+                        filled: true,
+                        fillColor: kSurface,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: lastCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'last_name'.tr,
+                        filled: true,
+                        fillColor: kSurface,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: numberCtrl,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'jersey_number'.tr,
+                        filled: true,
+                        fillColor: kSurface,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: heightCtrl,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'height_cm'.tr,
+                        filled: true,
+                        fillColor: kSurface,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: kSurface,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedPos,
+                    dropdownColor: kSurface,
+                    isExpanded: true,
+                    items: positions.map((pos) {
+                      return DropdownMenuItem<String>(
+                        value: pos['val'],
+                        child: Text(pos['label']!, style: const TextStyle(color: Colors.white)),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => selectedPos = val);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimary,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () async {
+                    if (firstCtrl.text.trim().isEmpty || lastCtrl.text.trim().isEmpty || numberCtrl.text.trim().isEmpty) {
+                      return;
+                    }
+                    Navigator.pop(ctx);
+                    setState(() => _isLoading = true);
+                    try {
+                      final body = {
+                        'firstName': firstCtrl.text.trim(),
+                        'lastName': lastCtrl.text.trim(),
+                        'jerseyNumber': int.tryParse(numberCtrl.text.trim()) ?? 1,
+                        'position': selectedPos,
+                        'heightCm': int.tryParse(heightCtrl.text.trim()) ?? 180,
+                        'playerValue': 5.0,
+                      };
+                      final res = await http.post(
+                        Uri.parse('$kBaseUrl/api/teams/${team['id']}/players'),
+                        headers: {'Content-Type': 'application/json'},
+                        body: json.encode(body),
+                      );
+                      if (res.statusCode == 201 || res.statusCode == 200) {
+                        await _fetchData();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: kPrimary,
+                              content: Text('${firstCtrl.text} (${team['name']}) ${'player_added_success'.tr}'.toUpperCase(), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                            ),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      debugPrint('Add player error: $e');
+                    } finally {
+                      setState(() => _isLoading = false);
+                    }
+                  },
+                  child: Text('save_button'.tr, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showTeamPlayersSheet(Map<String, dynamic> team) {
+    final teamPlayers = _allPlayers.where((p) => p['team'] != null && p['team']['id'] == team['id']).toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: kBg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.7,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.shield, color: kPrimary, size: 28),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(team['name']?.toString().toUpperCase() ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1)),
+                        Text('team_players'.tr, style: const TextStyle(color: kTextSub, fontSize: 12)),
+                      ],
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: kTextSub),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kPrimary,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _showAddPlayerToTeamDialog(team);
+                },
+                icon: const Icon(Icons.person_add_rounded, size: 20),
+                label: Text('add_player_to_team'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: teamPlayers.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.person_off_rounded, size: 48, color: Colors.white.withOpacity(0.1)),
+                          const SizedBox(height: 12),
+                          Text('no_players_yet'.tr, style: const TextStyle(color: kTextSub, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: teamPlayers.length,
+                      itemBuilder: (context, idx) {
+                        final p = teamPlayers[idx];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: kSurface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white.withOpacity(0.04)),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: kCard,
+                                child: Text(
+                                  '#${p['jerseyNumber'] ?? ''}',
+                                  style: const TextStyle(color: kPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${p['firstName']} ${p['lastName']}'.toUpperCase(),
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
+                                    Text(
+                                      '${p['position']}  •  ${p['heightCm'] ?? '-'} cm',
+                                      style: const TextStyle(color: kTextSub, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -225,7 +572,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: kBg,
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
@@ -239,22 +586,22 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('SELECT TEAM', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                Text('select_team'.tr, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 TextButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                     _showCreateTeamDialog();
                   },
                   icon: const Icon(Icons.add, color: kPrimary, size: 16),
-                  label: const Text('CREATE NEW', style: TextStyle(color: kPrimary, fontWeight: FontWeight.bold)),
+                  label: Text('create_new'.tr, style: TextStyle(color: kPrimary, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             if (availableTeams.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('All teams are already in this tournament or no teams exist.', style: TextStyle(color: kTextSub)),
+                child: Text('all_teams_in_tournament'.tr, style: TextStyle(color: kTextSub)),
               )
             else
               Expanded(
@@ -288,17 +635,17 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: kSurface,
-        title: const Text('DELETE TOURNAMENT', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to delete this tournament? This action cannot be undone and will delete all associated standings and fixtures.', style: TextStyle(color: Colors.white)),
+        title: Text('delete_tournament'.tr, style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+        content: Text('delete_confirm'.tr, style: const TextStyle(color: Colors.white)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('CANCEL', style: TextStyle(color: kTextSub)),
+            child: Text('cancel'.tr, style: const TextStyle(color: kTextSub)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('DELETE', style: TextStyle(color: Colors.white)),
+            child: Text('delete'.tr, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -338,7 +685,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: Scaffold(
-          backgroundColor: kBg,
+              backgroundColor: kBg,
           appBar: AppBar(
             backgroundColor: kBg,
             elevation: 0,
@@ -356,18 +703,18 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                 onPressed: _confirmDeleteTournament,
               ),
             ],
-            bottom: const TabBar(
+            bottom: TabBar(
               indicatorColor: kPrimary,
               labelColor: kPrimary,
               unselectedLabelColor: kTextSub,
-              labelStyle: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
               isScrollable: true,
               tabs: [
-                Tab(text: 'STANDINGS'),
-                Tab(text: 'FIXTURES'),
-                Tab(text: 'TEAMS'),
-                Tab(text: 'PLAYERS'),
-                Tab(text: 'HONOURS'),
+                Tab(text: 'standings'.tr),
+                Tab(text: 'fixtures'.tr),
+                Tab(text: 'teams'.tr),
+                Tab(text: 'players'.tr),
+                Tab(text: 'honours'.tr),
               ],
             ),
           ),
@@ -377,20 +724,61 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
                       width: double.infinity,
-                      color: kSurface,
+                      decoration: BoxDecoration(
+                        color: kSurface,
+                        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
                             children: [
-                              const Text('STATUS', style: TextStyle(color: kTextSub, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 4),
-                              Text(widget.tournament['tournamentStatus']?.toString().toUpperCase() ?? 'ACTIVE', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _currentStatus == 'ACTIVE'
+                                      ? kPrimary
+                                      : (_currentStatus == 'COMPLETED' ? Colors.blueAccent : Colors.amberAccent),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('status'.tr.toUpperCase(), style: const TextStyle(color: kTextSub, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    (_currentStatus.toLowerCase()).tr.toUpperCase(),
+                                    style: TextStyle(
+                                      color: _currentStatus == 'ACTIVE'
+                                          ? kPrimary
+                                          : (_currentStatus == 'COMPLETED' ? Colors.blueAccent : Colors.amberAccent),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
+                          if (_currentStatus == 'UPCOMING')
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kPrimary,
+                                foregroundColor: Colors.black,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              onPressed: () => _updateTournamentStatus('ACTIVE'),
+                              icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                              label: Text('start_tournament'.tr, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 0.5)),
+                            ),
                         ],
                       ),
                     ),
@@ -418,10 +806,10 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                 ),
           floatingActionButton: FloatingActionButton.extended(
             backgroundColor: kPrimary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), // Sharp corner
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), 
             onPressed: _showAddTeamSheet,
             icon: const Icon(Icons.add, color: Colors.white),
-            label: const Text('ADD TEAM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            label: Text('add_team'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ),
       ),
@@ -436,7 +824,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           children: [
             Icon(Icons.emoji_events, size: 48, color: Colors.white.withOpacity(0.1)),
             const SizedBox(height: 16),
-            const Text('NO STANDINGS AVAILABLE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+            Text('no_standings_available'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
           ],
         ),
       );
@@ -449,15 +837,15 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           headingTextStyle: const TextStyle(color: kTextSub, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1),
           dataTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
           columnSpacing: 24,
-          columns: const [
-            DataColumn(label: Text('#')),
-            DataColumn(label: Text('TEAM')),
-            DataColumn(label: Text('P'), tooltip: 'Played'),
-            DataColumn(label: Text('W'), tooltip: 'Won'),
-            DataColumn(label: Text('L'), tooltip: 'Lost'),
-            DataColumn(label: Text('PTS'), tooltip: 'Points'),
-            DataColumn(label: Text('SW'), tooltip: 'Sets Won'),
-            DataColumn(label: Text('SL'), tooltip: 'Sets Lost'),
+          columns: [
+            const DataColumn(label: Text('#')),
+            DataColumn(label: Text('team_label'.tr)),
+            DataColumn(label: Text('played_short'.tr), tooltip: 'played_tooltip'.tr),
+            DataColumn(label: Text('won_short'.tr), tooltip: 'won_tooltip'.tr),
+            DataColumn(label: Text('lost_short'.tr), tooltip: 'lost_tooltip'.tr),
+            DataColumn(label: Text('points_short'.tr), tooltip: 'points_tooltip'.tr),
+            DataColumn(label: Text('sets_won_short'.tr), tooltip: 'sets_won_tooltip'.tr),
+            DataColumn(label: Text('sets_lost_short'.tr), tooltip: 'sets_lost_tooltip'.tr),
           ],
           rows: List.generate(_standings.length, (index) {
             final st = _standings[index];
@@ -492,16 +880,16 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           children: [
             Icon(Icons.calendar_month, size: 48, color: Colors.white.withOpacity(0.1)),
             const SizedBox(height: 16),
-            const Text('FIXTURES NOT GENERATED YET', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+            Text('fixtures_not_generated_yet'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _generateFixtures,
               icon: const Icon(Icons.generating_tokens, color: Colors.white, size: 18),
-              label: const Text('GENERATE FIXTURES', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              label: Text('generate_fixtures'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: kPrimary,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), // Corporate sharp corner
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), 
               ),
             ),
           ],
@@ -527,7 +915,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: kSurface,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withOpacity(0.05)),
           ),
           child: Column(
@@ -543,7 +931,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                       color: status == 'FINISHED' ? kTextSub.withOpacity(0.1) : 
                              status == 'ACTIVE' ? kTeal.withOpacity(0.1) : 
                              Colors.white.withOpacity(0.1), 
-                      borderRadius: BorderRadius.circular(2)
+                      borderRadius: BorderRadius.circular(8)
                     ),
                     child: Text(status, style: TextStyle(
                       color: status == 'FINISHED' ? kTextSub : 
@@ -566,7 +954,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                       child: Text('${fix['homeTeamScore']} - ${fix['awayTeamScore']}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
                     )
                   else
-                    const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('VS', style: TextStyle(color: kTextSub, fontSize: 12, fontWeight: FontWeight.bold))),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('VS', style: TextStyle(color: kTextSub, fontSize: 12, fontWeight: FontWeight.bold))),
                   
                   Expanded(child: Text(awayTeam['name']?.toString().toUpperCase() ?? 'UNKNOWN', textAlign: TextAlign.right, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
                 ],
@@ -585,10 +973,10 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: status == 'ACTIVE' ? kTeal : kPrimary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: Text(status == 'ACTIVE' ? 'RESUME MATCH' : 'START MATCH', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Text(status == 'ACTIVE' ? 'resume_match'.tr : 'start_match'.tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -607,7 +995,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           children: [
             Icon(Icons.group_off, size: 48, color: Colors.white.withOpacity(0.1)),
             const SizedBox(height: 16),
-            const Text('NO TEAMS ADDED YET', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+            Text('no_teams_added_yet'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
           ],
         ),
       );
@@ -618,50 +1006,81 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       itemCount: _tournamentTeams.length,
       itemBuilder: (context, index) {
         final team = _tournamentTeams[index];
+        final teamPlayersCount = _allPlayers.where((p) => p['team'] != null && p['team']['id'] == team['id']).length;
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: kSurface,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withOpacity(0.05)),
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.shield, color: kPrimary),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  team['name']?.toString().toUpperCase() ?? 'UNKNOWN',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: kSurface,
-                      title: const Text('REMOVE TEAM', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                      content: Text('Are you sure you want to remove ${team['name']} from this tournament? Their standings will also be deleted.', style: const TextStyle(color: Colors.white)),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL', style: TextStyle(color: kTextSub))),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            _removeTeamFromTournament(team['id']);
-                          },
-                          child: const Text('REMOVE', style: TextStyle(color: Colors.white)),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => _showTeamPlayersSheet(team),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: kPrimary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.shield, color: kPrimary, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          team['name']?.toString().toUpperCase() ?? 'UNKNOWN',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.5),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '$teamPlayersCount ${'players'.tr.toLowerCase()}  •  ${'add_player_to_team'.tr.toLowerCase()}',
+                          style: const TextStyle(color: kTextSub, fontSize: 11, fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
-                  );
-                },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.person_add_rounded, color: kPrimary, size: 22),
+                    tooltip: 'add_player_to_team'.tr,
+                    onPressed: () => _showAddPlayerToTeamDialog(team),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 22),
+                    tooltip: 'remove'.tr,
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: kSurface,
+                          title: Text('remove_team_title'.tr, style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                          content: Text(('are_you_sure_remove'.tr + ' ${team['name']}? '), style: const TextStyle(color: Colors.white)),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL', style: TextStyle(color: kTextSub))),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _removeTeamFromTournament(team['id']);
+                              },
+                              child: const Text('REMOVE', style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
@@ -691,7 +1110,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           children: [
             Icon(Icons.people_alt_rounded, size: 48, color: Colors.white.withOpacity(0.1)),
             const SizedBox(height: 16),
-            const Text('NO PLAYERS FOUND IN THIS TOURNAMENT', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+            Text('no_players_found'.tr, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
           ],
         ),
       );

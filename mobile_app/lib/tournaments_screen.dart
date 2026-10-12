@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'tournament_detail_screen.dart';
 
-const Color kBg = Color(0xFF0A0F1A);
-const Color kSurface = Color(0xFF151D2A);
-const Color kCard = Color(0xFF1E2838);
-const Color kPrimary = Color(0xFFFF5A00);
+const Color kBg = Color(0xFF0D0D0D);
+const Color kSurface = Color(0xFF1E1E1E);
+const Color kCard = Color(0xFF2A2A2A);
+const Color kPrimary = Color(0xFF34D399);
 const Color kTextSub = Color(0xFF94A3B8);
 const String kBaseUrl = 'http://127.0.0.1:8080';
 
@@ -66,7 +67,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: kBg,
+              backgroundColor: kBg,
         appBar: AppBar(
           backgroundColor: kBg,
           elevation: 0,
@@ -74,11 +75,11 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Column(
+          title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('TOURNAMENTS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
-              Text('MANAGE & TRACK', style: TextStyle(fontSize: 10, color: kTextSub, letterSpacing: 1.2)),
+              Text('tournaments'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+              Text('manage_and_track'.tr, style: TextStyle(fontSize: 10, color: kTextSub, letterSpacing: 1.2)),
             ],
           ),
         ),
@@ -93,7 +94,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                           children: [
                             Icon(Icons.tour, size: 48, color: Colors.white.withOpacity(0.1)),
                             const SizedBox(height: 16),
-                            const Text('NO TOURNAMENTS YET', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+                            Text('no_tournaments_yet'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
                           ],
                         ),
                       )
@@ -122,7 +123,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: kSurface,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: Colors.white.withOpacity(0.05)),
                             ),
                             child: Row(
@@ -132,7 +133,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                                   height: 48,
                                   decoration: BoxDecoration(
                                     color: kBg,
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(16),
                                     border: Border.all(color: Colors.white.withOpacity(0.1)),
                                   ),
                                   child: const Icon(Icons.tour, color: kPrimary),
@@ -158,7 +159,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: statusColor.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Text(
                                     t['tournamentStatus'] ?? '',
@@ -187,7 +188,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: kBg,
       builder: (context) => Container(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -203,17 +204,17 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('NEW TOURNAMENT', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
+            Text('new_tournament'.tr, style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
             const SizedBox(height: 24),
             TextField(
               controller: nameController,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'Tournament Name',
+                labelText: 'tournament_name_label'.tr,
                 labelStyle: const TextStyle(color: kTextSub),
                 filled: true,
                 fillColor: kBg,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
             ),
             const SizedBox(height: 16),
@@ -221,11 +222,11 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
               controller: typeController,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'Tournament Type (e.g. Cup, League)',
+                labelText: 'tournament_type_label'.tr,
                 labelStyle: const TextStyle(color: kTextSub),
                 filled: true,
                 fillColor: kBg,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
             ),
             const SizedBox(height: 24),
@@ -235,7 +236,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 onPressed: () async {
                   if (nameController.text.isNotEmpty && typeController.text.isNotEmpty) {
@@ -243,7 +244,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                     if (context.mounted) Navigator.pop(context);
                   }
                 },
-                child: const Text('CREATE TOURNAMENT', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                child: Text('create_tournament'.tr, style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
               ),
             ),
             const SizedBox(height: 24),

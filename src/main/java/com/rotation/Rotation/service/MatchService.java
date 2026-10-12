@@ -7,8 +7,10 @@ import com.rotation.Rotation.entity.Tournament;
 import com.rotation.Rotation.repository.FixtureRepository;
 import com.rotation.Rotation.repository.MatchRepository;
 import com.rotation.Rotation.repository.TeamRepository;
+import com.rotation.Rotation.repository.PlayerStatsRepository;
 import com.rotation.Rotation.repository.TournamentStandingRepository;
 import com.rotation.Rotation.entity.Fixture;
+import com.rotation.Rotation.entity.PlayerStats;
 import com.rotation.Rotation.entity.TournamentStanding;
 
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class MatchService {
     private final TournamentService tournamentService;
     private final TournamentStandingRepository tournamentStandingRepository;
     private final FixtureRepository fixtureRepository;
+    private final PlayerStatsRepository playerStatsRepository;
 
     // Yeni maç başlat
     @Transactional
@@ -197,6 +200,22 @@ public class MatchService {
     // Maç Sil
     @Transactional
     public void deleteMatch(Long matchId) {
+        // 1. Önce bağlı player_stats kayıtlarını sil
+        List<PlayerStats> stats = playerStatsRepository.findByMatchId(matchId);
+        if (!stats.isEmpty()) {
+            playerStatsRepository.deleteAll(stats);
+        }
+
+        // 2. Bu maça bağlı fixture'ların matchId referansını temizle
+        fixtureRepository.findAll().stream()
+            .filter(f -> f.getMatchId() != null && f.getMatchId().equals(matchId))
+            .forEach(f -> {
+                f.setMatchId(null);
+                f.setStatus("SCHEDULED");
+                fixtureRepository.save(f);
+            });
+
+        // 3. Artık maçı güvenle sil
         matchRepository.deleteById(matchId);
     }
 

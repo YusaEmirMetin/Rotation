@@ -90,4 +90,9 @@ public class TournamentService {
         return savedTournament;
     }
 
+    public Tournament updateTournamentStatus(Long tournamentId, com.rotation.Rotation.entity.enums.TournamentStatus status) {
+        Tournament existingTournament = getTournamentById(tournamentId);
+        existingTournament.setTournamentStatus(status);
+        return tournamentRepository.save(existingTournament);
+    }
 }

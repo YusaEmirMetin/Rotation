@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:stomp_dart_client/stomp_dart_client.dart';
@@ -138,7 +139,7 @@ class _MatchScreenState extends State<MatchScreen>
 
   Future<void> _startMatchFromNames() async {
     if (_team1Ctrl.text.trim().isEmpty || _team2Ctrl.text.trim().isEmpty) {
-      setState(() => _error = 'İki takım ismi girmelisin');
+      setState(() => _error = 'two_teams_required'.tr);
       return;
     }
     setState(() { _isLoading = true; _error = null; });
@@ -161,7 +162,7 @@ class _MatchScreenState extends State<MatchScreen>
         _connectWebSocket();
       }
     } catch (e) {
-      setState(() { _error = 'Bağlantı hatası'; _isLoading = false; });
+      setState(() { _error = 'connection_error'.tr; _isLoading = false; });
     }
   }
 
@@ -263,7 +264,7 @@ class _MatchScreenState extends State<MatchScreen>
   // ── Kurulum ─────────────────────────────────────────────────────────────
   Widget _buildSetup() {
     return Scaffold(
-      backgroundColor: kBg,
+              backgroundColor: kBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -298,12 +299,12 @@ class _MatchScreenState extends State<MatchScreen>
                         color: Colors.white.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Icon(Icons.history_rounded, color: Colors.white, size: 16),
                           SizedBox(width: 8),
                           Text(
-                            'Geçmiş',
+                            'history'.tr,
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ],
@@ -320,8 +321,8 @@ class _MatchScreenState extends State<MatchScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Maç\nBaşlat',
+                    Text(
+                      'start_match_nl'.tr,
                       style: TextStyle(
                         fontSize: 44,
                         fontWeight: FontWeight.w900,
@@ -331,8 +332,8 @@ class _MatchScreenState extends State<MatchScreen>
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'İki takım adını gir ve sahaya çık',
+                    Text(
+                      'enter_two_teams'.tr,
                       style: TextStyle(fontSize: 15, color: kTextSub),
                     ),
 
@@ -341,7 +342,7 @@ class _MatchScreenState extends State<MatchScreen>
                     // Takım 1 kutusu
                     _SetupTeamBox(
                       controller: _team1Ctrl,
-                      label: 'Ev Sahibi',
+                      label: 'home'.tr,
                       number: '1',
                       color: kOrange,
                       gradientColors: const [Color(0xFF3D1A00), Color(0xFF1A0D00)],
@@ -379,7 +380,7 @@ class _MatchScreenState extends State<MatchScreen>
                     // Takım 2 kutusu
                     _SetupTeamBox(
                       controller: _team2Ctrl,
-                      label: 'Deplasman',
+                      label: 'away'.tr,
                       number: '2',
                       color: kTeal,
                       gradientColors: const [Color(0xFF001A15), Color(0xFF001210)],
@@ -413,7 +414,7 @@ class _MatchScreenState extends State<MatchScreen>
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _startMatchFromNames,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
+                          backgroundColor: kBg,
                           elevation: 0,
                           padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -438,13 +439,13 @@ class _MatchScreenState extends State<MatchScreen>
                           child: Center(
                             child: _isLoading
                                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : const Row(
+                                : Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(Icons.sports_volleyball_rounded, color: Colors.white, size: 22),
                                       SizedBox(width: 10),
                                       Text(
-                                        'DÜDÜĞÜ ÇAL!',
+                                        'blow_whistle'.tr,
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 16,
@@ -474,7 +475,7 @@ class _MatchScreenState extends State<MatchScreen>
     final leading = _team1Score > _team2Score ? 1 : (_team2Score > _team1Score ? 2 : 0);
 
     return Scaffold(
-      backgroundColor: kBg,
+              backgroundColor: kBg,
       body: Column(
         children: [
           // ── Takım 1 paneli (üst)
@@ -557,7 +558,7 @@ class _MatchScreenState extends State<MatchScreen>
                 color: Colors.white.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text('SONA ERDİ', style: TextStyle(color: kTextSub, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+              child: Text('ended'.tr, style: TextStyle(color: kTextSub, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
             ),
 
           // Skor özeti ortada
@@ -566,7 +567,7 @@ class _MatchScreenState extends State<MatchScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'SETLER: $_team1Sets - $_team2Sets',
+                  '${'sets_label'.tr}$_team1Sets - $_team2Sets',
                   style: const TextStyle(
                     color: kOrange,
                     fontSize: 10,
@@ -627,7 +628,7 @@ class _MatchScreenState extends State<MatchScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 ),
-                child: const Text('BİTİR', style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                child: Text('finish'.tr, style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1)),
               ),
             )
           else
@@ -643,17 +644,17 @@ class _MatchScreenState extends State<MatchScreen>
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A35),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Maçı Bitir?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+        title: Text('finish_match_q'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Setler: $_team1Sets - $_team2Sets',
+              '${'set_label'.tr}$_team1Sets - $_team2Sets',
               style: const TextStyle(color: kOrange, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1),
             ),
             const SizedBox(height: 12),
             Text(
-              'Final Skor',
+              'final_score'.tr,
               style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12, letterSpacing: 1),
             ),
             const SizedBox(height: 12),
@@ -673,7 +674,7 @@ class _MatchScreenState extends State<MatchScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Devam Et', style: TextStyle(color: Colors.white.withOpacity(0.5))),
+            child: Text('continue'.tr, style: TextStyle(color: Colors.white.withOpacity(0.5))),
           ),
           ElevatedButton(
             onPressed: () { Navigator.pop(ctx); _finishMatch(); },
@@ -681,7 +682,7 @@ class _MatchScreenState extends State<MatchScreen>
               backgroundColor: Colors.redAccent,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Maçı Bitir'),
+            child: Text('finish_match'.tr),
           ),
         ],
       ),
@@ -740,7 +741,7 @@ class _LiveBadgeState extends State<_LiveBadge> with SingleTickerProviderStateMi
               ),
             ),
             const SizedBox(width: 6),
-            const Text('CANLI', style: TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+            Text('live'.tr, style: TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
           ],
         ),
       ),
@@ -876,10 +877,10 @@ class _ScorePanel extends StatelessWidget {
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
+                        children: [
                           Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 14),
                           SizedBox(height: 2),
-                          Text('ÖNDE', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                          Text('leading'.tr, style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1)),
                         ],
                       ),
                     ),
@@ -965,7 +966,7 @@ class _ScorePanel extends StatelessWidget {
         Icon(Icons.touch_app_rounded, size: 13, color: Colors.white.withOpacity(0.25)),
         const SizedBox(width: 5),
         Text(
-          'Dokun +1  •  Basılı tut −1',
+          'tap_hold_instruction'.tr,
           style: TextStyle(
             fontSize: 11,
             color: Colors.white.withOpacity(0.25),
@@ -1065,7 +1066,7 @@ class _SetupTeamBox extends StatelessWidget {
             controller: controller,
             style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
             decoration: InputDecoration(
-              hintText: 'Takım Adı Girin',
+              hintText: 'enter_team_name'.tr,
               hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 16, fontWeight: FontWeight.w400),
               filled: true,
               fillColor: Colors.white.withOpacity(0.06),

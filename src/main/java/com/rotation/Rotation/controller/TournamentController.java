@@ -70,4 +70,9 @@ public class TournamentController {
     public Tournament removeTeamFromTournament(@PathVariable Long tournamentId, @PathVariable Long teamId) {
         return tournamentService.removeTeamFromTournament(tournamentId, teamId);
     }
+
+    @PutMapping("/{id}/status/{status}")
+    public Tournament updateTournamentStatus(@PathVariable Long id, @PathVariable com.rotation.Rotation.entity.enums.TournamentStatus status) {
+        return tournamentService.updateTournamentStatus(id, status);
+    }
 }

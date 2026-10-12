@@ -154,6 +154,12 @@ public class FixtureService {
         fixture.setMatchId(match.getId());
         fixtureRepository.save(fixture);
 
+        // Turnuva durumunu ACTIVE yap
+        if (fixture.getTournament() != null && fixture.getTournament().getTournamentStatus() == com.rotation.Rotation.entity.enums.TournamentStatus.UPCOMING) {
+            fixture.getTournament().setTournamentStatus(com.rotation.Rotation.entity.enums.TournamentStatus.ACTIVE);
+            tournamentRepository.save(fixture.getTournament());
+        }
+
         return match;
     }
 }

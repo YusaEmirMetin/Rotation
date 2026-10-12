@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'translation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'match_screen.dart';
@@ -7,12 +9,12 @@ import 'players_screen.dart';
 import 'honours_screen.dart';
 import 'tournaments_screen.dart';
 
-const kBg = Color(0xFF0A0F1A); // Deep Navy
-const kSurface = Color(0xFF151D2A); // Navy Surface
-const kCard = Color(0xFF1E2838); // Navy Card
-const kOrange = Color(0xFFFF5A00); // Volleyball Orange
-const kYellow = Color(0xFFFFC000); // Volleyball Yellow
-const kTeal = Color(0xFF10B981); // Emerald
+const kBg = Color(0xFF0D0D0D); // Deep dark
+const kSurface = Color(0xFF1E1E1E); // Surface
+const kCard = Color(0xFF262626); // Card
+const kPrimary = Color(0xFF34D399); // Vibrant Mint Emerald
+const kTeal = Color(0xFF34D399); // Emerald
+const kOrange = Color(0xFFFF5A00); // Volleyball Court Orange
 const kTextSub = Color(0xFF94A3B8); // Slate 400
 const String kBase = 'http://127.0.0.1:8080';
 
@@ -25,20 +27,22 @@ class RotationApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       title: 'Rotation',
+      translations: AppTranslations(),
+      locale: const Locale('tr'),
+      fallbackLocale: const Locale('en'),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: kBg,
         colorScheme: const ColorScheme.dark(
-          primary: kOrange,
-          secondary: kYellow,
+          primary: kPrimary,
           surface: kSurface,
         ),
         fontFamily: 'Roboto',
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
+          backgroundColor: kBg,
           elevation: 0,
           centerTitle: false,
           systemOverlayStyle: SystemUiOverlayStyle.light,
@@ -48,16 +52,16 @@ class RotationApp extends StatelessWidget {
           fillColor: kCard,
           labelStyle: const TextStyle(color: kTextSub),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.06)),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.06)),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: kOrange, width: 2),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: kPrimary, width: 2),
           ),
         ),
       ),
@@ -67,74 +71,342 @@ class RotationApp extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  DASHBOARD SCREEN (NEW HOME)
+//  VOLLEYBALL COURT CUSTOM PAINTER
 // ══════════════════════════════════════════════════════════════════════════════
-class DashboardScreen extends StatelessWidget {
+class VolleyballCourtPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final topLeft = Offset(size.width * 0.22, size.height * 0.08);
+    final topRight = Offset(size.width * 0.78, size.height * 0.08);
+    final bottomRight = Offset(size.width * 0.94, size.height * 0.92);
+    final bottomLeft = Offset(size.width * 0.06, size.height * 0.92);
+    final court = Path()
+      ..moveTo(topLeft.dx, topLeft.dy)
+      ..lineTo(topRight.dx, topRight.dy)
+      ..lineTo(bottomRight.dx, bottomRight.dy)
+      ..lineTo(bottomLeft.dx, bottomLeft.dy)
+      ..close();
+
+    canvas.drawPath(
+      court.shift(const Offset(0, 7)),
+      Paint()
+        ..color = Colors.black.withOpacity(0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+    );
+    canvas.drawPath(
+      court,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFF234A38), Color(0xFF10271F)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ).createShader(Offset.zero & size),
+    );
+
+    final linePaint = Paint()
+      ..color = const Color(0xFF8EE7BB).withOpacity(0.75)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+    canvas.drawPath(court, linePaint);
+
+    Offset leftAt(double depth) => Offset.lerp(topLeft, bottomLeft, depth)!;
+    Offset rightAt(double depth) => Offset.lerp(topRight, bottomRight, depth)!;
+    for (final depth in [0.34, 0.66]) {
+      canvas.drawLine(leftAt(depth), rightAt(depth), linePaint);
+    }
+
+    final netDepth = 0.5;
+    final netLeft = leftAt(netDepth);
+    final netRight = rightAt(netDepth);
+    canvas.drawLine(
+      netLeft,
+      netRight,
+      Paint()
+        ..color = Colors.white.withOpacity(0.85)
+        ..strokeWidth = 2.4,
+    );
+    for (var strand = 1; strand < 14; strand++) {
+      final point = Offset.lerp(netLeft, netRight, strand / 14)!;
+      canvas.drawLine(
+        Offset(point.dx, point.dy - 4),
+        Offset(point.dx, point.dy + 4),
+        Paint()
+          ..color = Colors.white.withOpacity(0.28)
+          ..strokeWidth = 0.7,
+      );
+    }
+
+    final ballCenter = Offset(size.width * 0.82, size.height * 0.28);
+    canvas.drawCircle(
+      ballCenter.translate(0, 2),
+      9,
+      Paint()..color = Colors.black.withOpacity(0.3),
+    );
+    canvas.drawCircle(ballCenter, 8, Paint()..color = const Color(0xFFF5A623));
+    canvas.drawArc(
+      Rect.fromCircle(center: ballCenter, radius: 6),
+      -1.1,
+      2.1,
+      false,
+      Paint()
+        ..color = Colors.white.withOpacity(0.85)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DASHBOARD SCREEN (MODERN COURT DESIGN)
+// ══════════════════════════════════════════════════════════════════════════════
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  int _tournamentCount = 0;
+  bool _hasActiveMatch = false;
+  Map<String, dynamic>? _activeMatch;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchQuickStats();
+  }
+
+  Future<void> _fetchQuickStats() async {
+    try {
+      final resTour = await http.get(Uri.parse('$kBase/api/tournaments'));
+      final resMatch = await http.get(Uri.parse('$kBase/api/matches/active'));
+
+      if (mounted) {
+        setState(() {
+          if (resTour.statusCode == 200) {
+            final list = json.decode(utf8.decode(resTour.bodyBytes)) as List;
+            _tournamentCount = list.length;
+          }
+          if (resMatch.statusCode == 200 && resMatch.body.isNotEmpty) {
+            _activeMatch = json.decode(utf8.decode(resMatch.bodyBytes));
+            _hasActiveMatch = _activeMatch != null && _activeMatch!['status'] == 'ACTIVE';
+          }
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 40),
-              // Header
+              const SizedBox(height: 24),
+              // App Bar / Header
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [kOrange, kYellow], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.sports_volleyball, color: Colors.white, size: 28),
+                  Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [kPrimary, Color(0xFF059669)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: kPrimary.withOpacity(0.3),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.sports_volleyball, color: Colors.black, size: 26),
+                      ),
+                      const SizedBox(width: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                            text: const TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'ROTA',
+                                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2),
+                                ),
+                                TextSpan(
+                                  text: 'TION',
+                                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: kPrimary, letterSpacing: 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            'volleyball_management_system'.tr,
+                            style: const TextStyle(color: kTextSub, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.5),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  RichText(
-                    text: const TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'ROTA',
-                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2),
-                        ),
-                        TextSpan(
-                          text: 'TION',
-                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: kOrange, letterSpacing: 2),
-                        ),
-                      ],
+                  Container(
+                    decoration: BoxDecoration(
+                      color: kSurface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.language, color: kPrimary, size: 22),
+                      tooltip: 'change_language'.tr,
+                      onPressed: () {
+                        if (Get.locale?.languageCode == 'en') {
+                          Get.updateLocale(const Locale('tr'));
+                        } else {
+                          Get.updateLocale(const Locale('en'));
+                        }
+                      },
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'VOLLEYBALL MANAGEMENT SYSTEM',
-                style: TextStyle(color: kTextSub, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 2),
-              ),
-              const SizedBox(height: 40),
-              
-              // Grid
-              Expanded(
-                child: Column(
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: _buildNavCard(context, 'TOURNAMENTS', 'Leagues & Cups', Icons.emoji_events_rounded, const TournamentsScreen()),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: _buildNavCard(context, 'QUICK MATCH', 'Start a custom match', Icons.scoreboard_rounded, const MatchScreen()),
+              const SizedBox(height: 28),
+
+              // ─── VOLLEYBALL COURT HERO CARD ─────────────────────────────
+              Container(
+                width: double.infinity,
+                height: 200,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF132A20),
+                      const Color(0xFF151D2A),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: kPrimary.withOpacity(0.25), width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kPrimary.withOpacity(0.12),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: VolleyballCourtPainter(),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(22.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _buildStatBadge('$_tournamentCount', 'tournaments'.tr),
+                                if (_hasActiveMatch) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: Colors.redAccent.withOpacity(0.6)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.redAccent,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'live'.tr,
+                                          style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _hasActiveMatch
+                                      ? '${_activeMatch!['team1Name']} vs ${_activeMatch!['team2Name']}'.toUpperCase()
+                                      : 'ROTATION PRO ARENA',
+                                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _hasActiveMatch
+                                      ? '${'score_label'.tr}${_activeMatch!['team1Score']} - ${_activeMatch!['team2Score']}  |  ${'set_label'.tr}${_activeMatch!['team1Sets']} - ${_activeMatch!['team2Sets']}'
+                                      : 'pro_arena_subtitle'.tr,
+                                  style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 12, fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
+              const SizedBox(height: 28),
+
+              // ─── ACTION TILES ───────────────────────────────────────────
+              _buildModernActionCard(
+                context,
+                title: 'tournaments'.tr,
+                subtitle: 'leagues_and_cups'.tr,
+                countText: '$_tournamentCount ${'tournaments_count'.tr}',
+                icon: Icons.emoji_events_rounded,
+                accentColor: kPrimary,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TournamentsScreen())).then((_) => _fetchQuickStats()),
+              ),
+              const SizedBox(height: 16),
+              _buildModernActionCard(
+                context,
+                title: 'quick_match'.tr,
+                subtitle: 'start_custom_match'.tr,
+                countText: _hasActiveMatch ? 'live_match_running'.tr : 'new_match'.tr,
+                icon: Icons.scoreboard_rounded,
+                accentColor: const Color(0xFF60A5FA),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MatchScreen())).then((_) => _fetchQuickStats()),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -142,46 +414,96 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNavCard(BuildContext context, String title, String subtitle, IconData icon, Widget targetScreen) {
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => targetScreen)),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: kSurface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 5)),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: kCard,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: kOrange, size: 28),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildStatBadge(String count, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Text(
+        '$count $label',
+        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildModernActionCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required String countText,
+    required IconData icon,
+    required Color accentColor,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 1),
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: accentColor.withOpacity(0.2)),
+                  ),
+                  child: Icon(icon, color: accentColor, size: 26),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: kTextSub, fontSize: 11, fontWeight: FontWeight.w500),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(color: kTextSub, fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
                 ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: kCard,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withOpacity(0.04)),
+                  ),
+                  child: Text(
+                    countText,
+                    style: TextStyle(color: accentColor, fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_ios_rounded, color: kTextSub, size: 14),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -222,7 +544,34 @@ class _TeamsScreenState extends State<TeamsScreen> {
         setState(() { _error = 'Sunucu hatası: ${res.statusCode}'; _isLoading = false; });
       }
     } catch (_) {
-      setState(() { _error = 'Bağlantı hatası. Backend çalışıyor mu?'; _isLoading = false; });
+      setState(() { _error = 'connection_error'.tr; _isLoading = false; });
+    }
+  }
+
+  Future<void> _deleteTeam(int teamId) async {
+    try {
+      final res = await http.delete(Uri.parse('$kBase/api/teams/$teamId'));
+      if (res.statusCode == 200 || res.statusCode == 204) {
+        await _fetchTeams();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                res.body.trim().isEmpty
+                    ? 'Takım silinemedi (${res.statusCode})'
+                    : 'Takım silinemedi: ${res.body.trim()}',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('connection_error'.tr)),
+        );
+      }
     }
   }
 
@@ -230,7 +579,7 @@ class _TeamsScreenState extends State<TeamsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: kBg,
       builder: (_) => AddTeamSheet(onCreated: _fetchTeams),
     );
   }
@@ -239,7 +588,7 @@ class _TeamsScreenState extends State<TeamsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('TEAMS DIRECTORY', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+        title: Text('teams_directory'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
         backgroundColor: kBg,
         elevation: 0,
       ),
@@ -282,7 +631,7 @@ class _TeamsScreenState extends State<TeamsScreen> {
             OutlinedButton.icon(
               onPressed: _fetchTeams,
               icon: const Icon(Icons.refresh_rounded, color: kOrange),
-              label: const Text('Tekrar Dene', style: TextStyle(color: kOrange)),
+              label: Text('retry'.tr, style: TextStyle(color: kOrange)),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: kOrange),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -301,13 +650,13 @@ class _TeamsScreenState extends State<TeamsScreen> {
           children: [
             Icon(Icons.sports_volleyball, size: 48, color: Colors.white.withOpacity(0.1)),
             const SizedBox(height: 24),
-            const Text(
-              'NO TEAMS FOUND',
+            Text(
+              'no_teams_found'.tr,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Add a team to start tracking.',
+            Text(
+              'add_team_to_start'.tr,
               style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, letterSpacing: 0.5),
             ),
           ],
@@ -324,6 +673,39 @@ class _TeamsScreenState extends State<TeamsScreen> {
           context,
           MaterialPageRoute(builder: (_) => TeamDetailScreen(team: _teams[index])),
         ),
+        onDelete: () {
+          final teamId = _teams[index]['id'] as int;
+          final teamName = _teams[index]['name'] ?? '';
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: kSurface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text('remove_team_title'.tr, style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              content: Text(
+                '${'are_you_sure_remove'.tr} $teamName?',
+                style: const TextStyle(color: Colors.white),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('cancel'.tr, style: const TextStyle(color: kTextSub)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _deleteTeam(teamId);
+                  },
+                  child: Text('delete'.tr, style: const TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -335,11 +717,11 @@ class _TeamsScreenState extends State<TeamsScreen> {
       foregroundColor: Colors.white,
       elevation: 0,
       icon: const Icon(Icons.add, size: 20),
-      label: const Text(
-        'NEW TEAM',
-        style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, fontSize: 12),
+      label: Text(
+        'new_team'.tr,
+        style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, fontSize: 12),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), // Sharp edges
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
 }
@@ -348,8 +730,9 @@ class _TeamsScreenState extends State<TeamsScreen> {
 class _TeamCard extends StatelessWidget {
   final dynamic team;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
-  const _TeamCard({required this.team, required this.onTap});
+  const _TeamCard({required this.team, required this.onTap, required this.onDelete});
 
   Color _avatarColor(String name) {
     final colors = [
@@ -374,7 +757,7 @@ class _TeamCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: kSurface,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
         child: Stack(
@@ -409,7 +792,7 @@ class _TeamCard extends StatelessWidget {
                     height: 56,
                     decoration: BoxDecoration(
                       color: kCard,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: color.withOpacity(0.5)),
                     ),
                     child: Center(
@@ -452,9 +835,22 @@ class _TeamCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Volleyball ikonu
-                  Icon(Icons.sports_volleyball, color: color.withOpacity(0.5), size: 22),
-                  const SizedBox(width: 8),
+                  // Sil butonu
+                  IconButton(
+                    onPressed: onDelete,
+                    tooltip: 'Takımı sil',
+                    constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.red.withOpacity(0.08),
+                      foregroundColor: Colors.redAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: Colors.red.withOpacity(0.2)),
+                      ),
+                    ),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                  ),
+                  // Chevron
                   Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.3), size: 22),
                 ],
               ),
@@ -544,7 +940,7 @@ class _AddTeamSheetState extends State<AddTeamSheet> {
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
@@ -560,11 +956,11 @@ class _AddTeamSheetState extends State<AddTeamSheet> {
                 child: const Icon(Icons.group_add_rounded, color: Colors.white, size: 22),
               ),
               const SizedBox(width: 14),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Yeni Takım', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
-                  Text('Takım bilgilerini gir', style: TextStyle(fontSize: 13, color: kTextSub)),
+                  Text('new_team_cap'.tr, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+                  Text('enter_team_info'.tr, style: TextStyle(fontSize: 13, color: kTextSub)),
                 ],
               ),
             ],
@@ -632,7 +1028,7 @@ class _AddTeamSheetState extends State<AddTeamSheet> {
               ),
               child: _isLoading
                   ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Takımı Kaydet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  : Text('save_team'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -702,7 +1098,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: kBg,
       builder: (_) => AddPlayerSheet(
         teamId: widget.team['id'],
         onCreated: _fetchPlayers,
@@ -751,7 +1147,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                           height: 64,
                           decoration: BoxDecoration(
                             color: kCard,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: kOrange.withOpacity(0.5)),
                           ),
                           child: Center(
@@ -790,7 +1186,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: kSurface,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: kOrange.withOpacity(0.3)),
                             ),
                             child: const Icon(Icons.emoji_events, color: kOrange, size: 24),
@@ -816,8 +1212,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         icon: const Icon(Icons.person_add, size: 20),
-        label: const Text('ADD PLAYER', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, fontSize: 12)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), // Sharp edges
+        label: Text('add_player'.tr, style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, fontSize: 12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Sharp edges
       ),
     );
   }
@@ -841,9 +1237,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             children: [
               Icon(Icons.group, size: 48, color: Colors.white.withOpacity(0.1)),
               const SizedBox(height: 16),
-              const Text('NO PLAYERS YET', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+              Text('no_players_yet'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
               const SizedBox(height: 8),
-              const Text('Tap ADD PLAYER to begin', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+              Text('tap_add_player_to_begin'.tr, style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
             ],
           ),
         ),
@@ -885,7 +1281,7 @@ class _PlayerCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         color: kSurface,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Row(
@@ -896,7 +1292,7 @@ class _PlayerCard extends StatelessWidget {
             height: 50,
             decoration: BoxDecoration(
               color: kCard,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: posColor.withOpacity(0.5), width: 2),
             ),
             child: Center(
@@ -926,7 +1322,7 @@ class _PlayerCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: posColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(posLabel, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: posColor)),
                     ),
@@ -944,7 +1340,7 @@ class _PlayerCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: kBg,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white.withOpacity(0.08)),
             ),
             child: Column(
@@ -1068,7 +1464,7 @@ class _AddPlayerSheetState extends State<AddPlayerSheet> {
                 margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
             ),
@@ -1083,11 +1479,11 @@ class _AddPlayerSheetState extends State<AddPlayerSheet> {
                   child: const Icon(Icons.person_add_rounded, color: Colors.white, size: 22),
                 ),
                 const SizedBox(width: 14),
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Yeni Oyuncu', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
-                    Text('Oyuncu bilgilerini gir', style: TextStyle(fontSize: 13, color: kTextSub)),
+                    Text('new_player'.tr, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+                    Text('enter_player_info'.tr, style: TextStyle(fontSize: 13, color: kTextSub)),
                   ],
                 ),
               ],
@@ -1111,7 +1507,7 @@ class _AddPlayerSheetState extends State<AddPlayerSheet> {
             ),
             const SizedBox(height: 16),
 
-            const Text('Mevki', style: TextStyle(color: kTextSub, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('position'.tr, style: TextStyle(color: kTextSub, fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -1170,7 +1566,7 @@ class _AddPlayerSheetState extends State<AddPlayerSheet> {
                 ),
                 child: _isLoading
                     ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Oyuncuyu Kaydet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    : Text('save_player'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               ),
             ),
           ],

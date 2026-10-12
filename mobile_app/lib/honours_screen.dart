@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -70,7 +71,7 @@ class _HonoursScreenState extends State<HonoursScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: kBg,
       builder: (_) => _AddHonourSheet(
         teamId: widget.teamId,
         playerId: widget.playerId,
@@ -84,7 +85,7 @@ class _HonoursScreenState extends State<HonoursScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: kBg,
+              backgroundColor: kBg,
         appBar: AppBar(
           backgroundColor: kBg,
           elevation: 0,
@@ -99,8 +100,8 @@ class _HonoursScreenState extends State<HonoursScreen> {
                 widget.titleName.toUpperCase(),
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
               ),
-              const Text(
-                'HONOURS & AWARDS',
+              Text(
+                'honours_and_awards'.tr,
                 style: TextStyle(fontSize: 10, color: kTextSub, letterSpacing: 1.2),
               ),
             ],
@@ -108,12 +109,12 @@ class _HonoursScreenState extends State<HonoursScreen> {
         ),
         body: SafeArea(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: kAccent))
+              ? Center(child: CircularProgressIndicator(color: kAccent))
               : _error.isNotEmpty
                   ? Center(child: Text(_error, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)))
                   : _honours.isEmpty
-                      ? const Center(
-                          child: Text('NO HONOURS RECORDED', style: TextStyle(color: kTextSub, fontSize: 12, letterSpacing: 1, fontWeight: FontWeight.bold)),
+                      ? Center(
+                          child: Text('no_honours_recorded'.tr, style: TextStyle(color: kTextSub, fontSize: 12, letterSpacing: 1, fontWeight: FontWeight.bold)),
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -129,7 +130,7 @@ class _HonoursScreenState extends State<HonoursScreen> {
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: kCard,
-                                borderRadius: BorderRadius.circular(4), // Sharp edges
+                                borderRadius: BorderRadius.circular(16), // Sharp edges
                                 border: Border(left: BorderSide(color: kAccent, width: 4)),
                               ),
                               child: Row(
@@ -154,7 +155,7 @@ class _HonoursScreenState extends State<HonoursScreen> {
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: kBg,
-                                      borderRadius: BorderRadius.circular(2),
+                                      borderRadius: BorderRadius.circular(8),
                                       border: Border.all(color: Colors.white.withOpacity(0.1)),
                                     ),
                                     child: Text(
@@ -175,11 +176,11 @@ class _HonoursScreenState extends State<HonoursScreen> {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 icon: const Icon(Icons.add, size: 20),
-                label: const Text(
-                  'ADD HONOUR',
+                label: Text(
+                  'add_honour'.tr,
                   style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, fontSize: 12),
                 ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               )
             : null,
       ),
@@ -254,7 +255,7 @@ class _AddHonourSheetState extends State<_AddHonourSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('NEW HONOUR', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+          Text('new_honour'.tr, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
           const SizedBox(height: 24),
           if (_error != null)
             Padding(
@@ -274,11 +275,11 @@ class _AddHonourSheetState extends State<_AddHonourSheet> {
               onPressed: _isLoading ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF5A00), // kAccent
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: _isLoading
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('SAVE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.white)),
+                  : Text('save_button'.tr, style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.white)),
             ),
           ),
         ],
@@ -296,7 +297,7 @@ class _AddHonourSheetState extends State<_AddHonourSheet> {
         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, letterSpacing: 1),
         filled: true,
         fillColor: const Color(0xFF0F0F1A), // kBg
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );

@@ -16,7 +16,8 @@ public class TeamController {
 
     private final TeamService teamService;
 
-    // POST isteği ile "/api/teams" adresine gelen veriyi yakalar ve yeni takım oluşturur
+    // POST isteği ile "/api/teams" adresine gelen veriyi yakalar ve yeni takım
+    // oluşturur
     @PostMapping
     public ResponseEntity<Team> createTeam(@RequestBody Team team) {
         Team createdTeam = teamService.createTeam(team);
@@ -35,5 +36,11 @@ public class TeamController {
     public ResponseEntity<Team> getTeamById(@PathVariable Long id) {
         Team team = teamService.getTeamById(id);
         return ResponseEntity.ok(team); // 200 OK döner
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTeamById(@PathVariable Long id) {
+        teamService.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 }

@@ -49,6 +49,7 @@ public class Tournament {
     @Column(name = "tournament_status", nullable = false)
     private TournamentStatus tournamentStatus;
 
+    @Builder.Default
     @ManyToMany
     @JoinTable(name = "tournament_teams", joinColumns = @JoinColumn(name = "tournament_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "team_id", referencedColumnName = "id"))
     private List<Team> teams = new java.util.ArrayList<>();

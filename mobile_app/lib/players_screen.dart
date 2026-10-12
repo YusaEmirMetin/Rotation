@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'honours_screen.dart';
 
-const Color kBg = Color(0xFF0A0F1A); // Slate 900
+const Color kBg = Color(0xFF0D0D0D);
+const Color kGradientTop = Color(0xFF093122); // Slate 900
 const Color kCard = Color(0xFF151D2A); // Slate 800
 const Color kSurface = Color(0xFF1E2838); // Slate 700
 const Color kOrange = Color(0xFFFF5A00); // Professional Blue
-const Color kTeal = Color(0xFF10B981); // Emerald Green
+const Color kTeal = Color(0xFF34D399); // Emerald Green
 const Color kTextSub = Color(0xFF94A3B8); // Slate 400
 const String kBaseUrl = 'http://127.0.0.1:8080';
 
@@ -82,7 +84,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: kBg,
+              backgroundColor: kBg,
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,8 +106,8 @@ class _PlayersScreenState extends State<PlayersScreen> {
                       onPressed: () => Navigator.pop(context),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
-                      'Tüm Oyuncular',
+                    Text(
+                      'all_players'.tr,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
@@ -119,13 +121,13 @@ class _PlayersScreenState extends State<PlayersScreen> {
               // İçerik
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: kTeal))
+                    ? Center(child: CircularProgressIndicator(color: kTeal))
                     : _error.isNotEmpty
                         ? Center(child: Text(_error, style: const TextStyle(color: Colors.red)))
                         : _players.isEmpty
-                            ? const Center(
+                            ? Center(
                                 child: Text(
-                                  'Ligde henüz kayıtlı oyuncu yok.',
+                                  'no_players_in_league'.tr,
                                   style: TextStyle(color: kTextSub, fontSize: 16),
                                 ),
                               )
@@ -147,7 +149,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: kCard,
-                                      borderRadius: BorderRadius.circular(4),
+                                      borderRadius: BorderRadius.circular(16),
                                       border: Border.all(color: Colors.white.withOpacity(0.05)),
                                     ),
                                     child: Row(
@@ -158,7 +160,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                                           alignment: Alignment.center,
                                           decoration: BoxDecoration(
                                             color: kBg,
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(16),
                                             border: Border.all(color: Colors.white.withOpacity(0.1)),
                                           ),
                                           child: Text(
@@ -190,7 +192,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                           decoration: BoxDecoration(
                                             color: kBg,
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(16),
                                             border: Border.all(color: Colors.white.withOpacity(0.08)),
                                           ),
                                           child: Column(
@@ -220,7 +222,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                                             padding: const EdgeInsets.all(8),
                                             decoration: BoxDecoration(
                                               color: kSurface,
-                                              borderRadius: BorderRadius.circular(4),
+                                              borderRadius: BorderRadius.circular(16),
                                               border: Border.all(color: Colors.amber.withOpacity(0.3)),
                                             ),
                                             child: const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
@@ -233,7 +235,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                                             padding: const EdgeInsets.all(8),
                                             decoration: BoxDecoration(
                                               color: kBg,
-                                              borderRadius: BorderRadius.circular(4),
+                                              borderRadius: BorderRadius.circular(16),
                                               border: Border.all(color: Colors.red.withOpacity(0.3)),
                                             ),
                                             child: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
