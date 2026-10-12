@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'match_screen.dart';
 import 'players_screen.dart';
+import 'player_edit_sheet.dart';
 import 'honours_screen.dart';
 import 'tournaments_screen.dart';
 
@@ -1106,6 +1107,64 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
+  void _editPlayer(Map<String, dynamic> player) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => PlayerEditSheet(
+        player: player,
+        teamId: int.parse('${widget.team['id']}'),
+        onSaved: () {
+          _fetchPlayers();
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('player_updated'.tr)));
+        },
+      ),
+    );
+  }
+
+  Future<void> _confirmDeletePlayer(Map<String, dynamic> player) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: kSurface,
+        title: Text('delete_player'.tr, style: const TextStyle(color: Colors.white)),
+        content: Text(
+          '${player['firstName'] ?? ''} ${player['lastName'] ?? ''}\n${'player_delete_confirmation'.tr}',
+          style: const TextStyle(color: kTextSub),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('cancel'.tr)),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('delete'.tr, style: const TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final teamId = widget.team['id'];
+      final playerId = player['id'];
+      final response = await http.delete(Uri.parse('$kBase/api/teams/$teamId/players/$playerId'));
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        await _fetchPlayers();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('player_deleted'.tr)));
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'error_occurred'.tr} (${response.statusCode})')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('connection_error'.tr)));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = widget.team['name'] ?? 'Takım';
@@ -1248,7 +1307,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
     return SliverList(
       delegate: SliverChildBuilderDelegate(
-        (context, i) => _PlayerCard(player: _players[i]),
+        (context, i) => _PlayerCard(
+          player: _players[i],
+          onEdit: () => _editPlayer(Map<String, dynamic>.from(_players[i] as Map)),
+          onDelete: () => _confirmDeletePlayer(Map<String, dynamic>.from(_players[i] as Map)),
+        ),
         childCount: _players.length,
       ),
     );
@@ -1258,7 +1321,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 // ── Player Card ──────────────────────────────────────────────────────────────
 class _PlayerCard extends StatelessWidget {
   final dynamic player;
-  const _PlayerCard({required this.player});
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  const _PlayerCard({required this.player, required this.onEdit, required this.onDelete});
 
   static const _posMap = {
     'SETTER': ('Pasör', kTeal),
@@ -1360,6 +1425,24 @@ class _PlayerCard extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(width: 6),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                onPressed: onEdit,
+                tooltip: 'edit_player'.tr,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.edit_outlined, color: kTeal, size: 20),
+              ),
+              IconButton(
+                onPressed: onDelete,
+                tooltip: 'delete_player'.tr,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+              ),
+            ],
           ),
         ],
       ),

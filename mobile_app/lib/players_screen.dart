@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'honours_screen.dart';
+import 'player_edit_sheet.dart';
 
 const Color kBg = Color(0xFF0D0D0D);
 const Color kGradientTop = Color(0xFF093122); // Slate 900
@@ -57,18 +58,76 @@ class _PlayersScreenState extends State<PlayersScreen> {
     }
   }
 
-  Future<void> _deletePlayer(int playerId) async {
+  Future<void> _deletePlayer(Map<String, dynamic> player) async {
+    final playerId = int.tryParse('${player['id']}');
+    final team = player['team'];
+    final teamId = team is Map ? int.tryParse('${team['id']}') : null;
+    if (teamId == null || playerId == null) {
+      _showMessage('player_team_not_found'.tr);
+      return;
+    }
     try {
-      // Not: Şu an test amaçlı teamId = 1 gönderiyoruz. (Endpoint: /api/teams/1/players/{id})
-      final res = await http.delete(Uri.parse('$kBaseUrl/api/teams/1/players/$playerId'));
+      final res = await http.delete(Uri.parse('$kBaseUrl/api/teams/$teamId/players/$playerId'));
       if (res.statusCode == 204 || res.statusCode == 200) {
-        _fetchPlayers(); // Sildikten sonra listeyi yenile
+        await _fetchPlayers();
+        _showMessage('player_deleted'.tr);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: ${res.statusCode}')));
+        _showMessage('${'error_occurred'.tr} (${res.statusCode})');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Bağlantı hatası: $e')));
+      _showMessage('connection_error'.tr);
     }
+  }
+
+  Future<void> _confirmDeletePlayer(Map<String, dynamic> player) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: kSurface,
+        title: Text('delete_player'.tr, style: const TextStyle(color: Colors.white)),
+        content: Text(
+          '${player['firstName'] ?? ''} ${player['lastName'] ?? ''}\n${'player_delete_confirmation'.tr}',
+          style: const TextStyle(color: kTextSub),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('cancel'.tr)),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('delete'.tr, style: const TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _deletePlayer(player);
+    }
+  }
+
+  void _editPlayer(Map<String, dynamic> player) {
+    final team = player['team'];
+    final teamId = team is Map ? int.tryParse('${team['id']}') : null;
+    if (teamId == null) {
+      _showMessage('player_team_not_found'.tr);
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => PlayerEditSheet(
+        player: player,
+        teamId: teamId,
+        onSaved: () {
+          _fetchPlayers();
+          _showMessage('player_updated'.tr);
+        },
+      ),
+    );
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Color _getValueColor(double val) {
@@ -135,7 +194,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                                 itemCount: _players.length,
                                 itemBuilder: (context, index) {
-                                  final player = _players[index];
+                                  final player = Map<String, dynamic>.from(_players[index] as Map);
                                   final playerId = player['id'];
                                   final firstName = player['firstName'] ?? '';
                                   final lastName = player['lastName'] ?? '';
@@ -209,37 +268,27 @@ class _PlayersScreenState extends State<PlayersScreen> {
                                             ],
                                           ),
                                         ),
-                                        // Başarılar Butonu
-                                        GestureDetector(
-                                          onTap: () {
-                                            Navigator.push(context, MaterialPageRoute(builder: (_) => HonoursScreen(
-                                              playerId: playerId,
-                                              titleName: name,
-                                            )));
+                                        PopupMenuButton<String>(
+                                          icon: const Icon(Icons.more_vert, color: kTextSub),
+                                          color: kSurface,
+                                          onSelected: (action) {
+                                            if (action == 'edit') _editPlayer(player);
+                                            if (action == 'delete') _confirmDeletePlayer(player);
+                                            if (action == 'honours') {
+                                              Navigator.push(context, MaterialPageRoute(builder: (_) => HonoursScreen(
+                                                playerId: playerId,
+                                                titleName: name,
+                                              )));
+                                            }
                                           },
-                                          child: Container(
-                                            margin: const EdgeInsets.only(right: 8),
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: kSurface,
-                                              borderRadius: BorderRadius.circular(16),
-                                              border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                                          itemBuilder: (_) => [
+                                            PopupMenuItem(value: 'edit', child: Text('edit_player'.tr)),
+                                            PopupMenuItem(value: 'honours', child: Text('honours'.tr)),
+                                            PopupMenuItem(
+                                              value: 'delete',
+                                              child: Text('delete_player'.tr, style: const TextStyle(color: Colors.redAccent)),
                                             ),
-                                            child: const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
-                                          ),
-                                        ),
-                                        // Sil Butonu
-                                        GestureDetector(
-                                          onTap: () => _deletePlayer(playerId),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: kBg,
-                                              borderRadius: BorderRadius.circular(16),
-                                              border: Border.all(color: Colors.red.withOpacity(0.3)),
-                                            ),
-                                            child: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                                          ),
+                                          ],
                                         ),
                                       ],
                                     ),

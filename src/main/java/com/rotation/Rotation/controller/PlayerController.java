@@ -39,10 +39,10 @@ public class PlayerController {
         return ResponseEntity.ok(players);
     }
 
-    // Delete /api/players/id
+    // DELETE /api/teams/{teamId}/players/{playerId}
     @DeleteMapping("/{playerId}")
-    public ResponseEntity<Void> deletePlayer(@PathVariable Long playerId) {
-        playerService.deletePlayer(playerId);
+    public ResponseEntity<Void> deletePlayer(@PathVariable Long teamId, @PathVariable Long playerId) {
+        playerService.deletePlayer(teamId, playerId);
         return ResponseEntity.noContent().build();
     }
 
@@ -59,12 +59,11 @@ public class PlayerController {
     }
 
     // Update /api/players/id
-    /*
-     * @PutMapping("/{playerId}")
-     * public ResponseEntity<Player> updatePlayer(@PathVariable Long
-     * playerId, @RequestBody Player player){
-     * Player updatedPlayer = playerService.updatePlayer(playerId, player);
-     * return ResponseEntity.ok(updatedPlayer);
-     * }
-     */
+
+    @PutMapping("/{playerId}")
+    public ResponseEntity<Player> updatePlayer(@PathVariable Long teamId, @PathVariable Long playerId,
+            @RequestBody Player player) {
+        return ResponseEntity.ok(playerService.updatePlayer(teamId, playerId, player));
+    }
+
 }

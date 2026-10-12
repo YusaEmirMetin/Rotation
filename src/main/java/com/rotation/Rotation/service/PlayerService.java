@@ -1,12 +1,17 @@
 package com.rotation.Rotation.service;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.rotation.Rotation.entity.Player;
 import com.rotation.Rotation.entity.Team;
 import com.rotation.Rotation.repository.PlayerRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -45,8 +50,29 @@ public class PlayerService {
     }
 
     // 4.Oyuncu Sil
-    public void deletePlayer(Long playerId) {
-        playerRepository.deleteById(playerId);
+    @Transactional
+    public void deletePlayer(Long teamId, Long playerId) {
+        playerRepository.delete(findPlayerInTeam(teamId, playerId));
+    }
+
+    @Transactional
+    public Player updatePlayer(Long teamId, Long playerId, Player changes) {
+        Player player = findPlayerInTeam(teamId, playerId);
+        player.setFirstName(changes.getFirstName());
+        player.setLastName(changes.getLastName());
+        player.setJerseyNumber(changes.getJerseyNumber());
+        player.setPosition(changes.getPosition());
+        player.setHeightCm(changes.getHeightCm());
+        return playerRepository.save(player);
+    }
+
+    private Player findPlayerInTeam(Long teamId, Long playerId) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Oyuncu bulunamadı"));
+        if (player.getTeam() == null || !teamId.equals(player.getTeam().getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Oyuncu bu takımda bulunamadı");
+        }
+        return player;
     }
 
     // 5.Oyuncu Değeri
