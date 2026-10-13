@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:rotation_app/main.dart';
+import 'package:rotation_app/tournament_detail_screen.dart';
 
 void main() {
   testWidgets('RotationApp smoke test', (WidgetTester tester) async {
@@ -18,5 +19,37 @@ void main() {
 
     // Verify that RotationApp is rendered.
     expect(find.byType(RotationApp), findsOneWidget);
+  });
+
+  testWidgets('referee dialog returns names and disposes its controllers safely', (WidgetTester tester) async {
+    List<String>? result;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () async {
+                result = await showDialog<List<String>>(
+                  context: context,
+                  builder: (_) => const CreateRefereeDialog(),
+                );
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'Ada');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Yilmaz');
+    await tester.tap(find.byIcon(Icons.save_outlined));
+    await tester.pumpAndSettle();
+
+    expect(result, ['Ada', 'Yilmaz']);
+    expect(tester.takeException(), isNull);
   });
 }

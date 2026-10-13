@@ -23,6 +23,79 @@ class TournamentDetailScreen extends StatefulWidget {
   State<TournamentDetailScreen> createState() => _TournamentDetailScreenState();
 }
 
+class CreateRefereeDialog extends StatefulWidget {
+  const CreateRefereeDialog({super.key});
+
+  @override
+  State<CreateRefereeDialog> createState() => _CreateRefereeDialogState();
+}
+
+class _CreateRefereeDialogState extends State<CreateRefereeDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: kSurface,
+      title: Text('add_referee'.tr, style: const TextStyle(color: Colors.white)),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _firstNameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(labelText: 'first_name'.tr),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'field_required'.tr
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _lastNameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(labelText: 'last_name'.tr),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'field_required'.tr
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton.icon(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.pop(context, [
+                _firstNameController.text.trim(),
+                _lastNameController.text.trim(),
+              ]);
+            }
+          },
+          icon: const Icon(Icons.save_outlined),
+          label: Text('save_button'.tr),
+        ),
+      ],
+    );
+  }
+}
+
 class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   bool _isLoading = true;
   List<dynamic> _tournamentTeams = [];
@@ -630,61 +703,10 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   }
 
   Future<void> _showCreateRefereeDialog() async {
-    final formKey = GlobalKey<FormState>();
-    final firstNameController = TextEditingController();
-    final lastNameController = TextEditingController();
     final result = await showDialog<List<String>>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: kSurface,
-        title: Text('add_referee'.tr, style: const TextStyle(color: Colors.white)),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: firstNameController,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(labelText: 'first_name'.tr),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'field_required'.tr
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: lastNameController,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(labelText: 'last_name'.tr),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'field_required'.tr
-                    : null,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('cancel'.tr),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(dialogContext, [
-                  firstNameController.text.trim(),
-                  lastNameController.text.trim(),
-                ]);
-              }
-            },
-            icon: const Icon(Icons.save_outlined),
-            label: Text('save_button'.tr),
-          ),
-        ],
-      ),
+      builder: (_) => const CreateRefereeDialog(),
     );
-    firstNameController.dispose();
-    lastNameController.dispose();
     if (result != null) {
       await _createReferee(result[0], result[1]);
     }
