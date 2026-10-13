@@ -29,6 +29,9 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   List<dynamic> _allTeams = [];
   List<dynamic> _standings = [];
   List<dynamic> _fixtures = [];
+  List<dynamic> _referees = [];
+  Map<int, int> _matchRefereeIds = {};
+  Set<int> _assigningMatchIds = {};
   List<dynamic> _allPlayers = [];
   String _currentStatus = 'UPCOMING';
 
@@ -80,17 +83,51 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       // 5. Oyuncuları al (Tüm oyunculardan filtreleyeceğiz)
       final resPlayers = await http.get(Uri.parse('$kBaseUrl/api/teams/1/players/all'));
 
+      // 6. Hakem listesini al
+      final resReferees = await http.get(Uri.parse('$kBaseUrl/api/referees'));
+
       if (resTour.statusCode == 200 && resTeams.statusCode == 200) {
         final tourData = json.decode(utf8.decode(resTour.bodyBytes));
+        final fixtures = resFixtures.statusCode == 200
+            ? json.decode(utf8.decode(resFixtures.bodyBytes)) as List<dynamic>
+            : <dynamic>[];
+        final referees = resReferees.statusCode == 200
+            ? json.decode(utf8.decode(resReferees.bodyBytes)) as List<dynamic>
+            : <dynamic>[];
+        final refereeIds = <int, int>{};
+        final matchIds = fixtures
+            .map((fixture) => fixture['matchId'])
+            .whereType<num>()
+            .map((id) => id.toInt())
+            .toSet();
+
+        await Future.wait(matchIds.map((matchId) async {
+          try {
+            final response = await http.get(Uri.parse('$kBaseUrl/api/matches/$matchId'));
+            if (response.statusCode == 200) {
+              final match = json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+              final referee = match['referee'];
+              if (referee is Map && referee['id'] is num) {
+                refereeIds[matchId] = (referee['id'] as num).toInt();
+              }
+            }
+          } catch (e) {
+            debugPrint('Could not load match referee: $e');
+          }
+        }));
+
+        if (!mounted) return;
         setState(() {
           _currentStatus = tourData['tournamentStatus']?.toString().toUpperCase() ?? _currentStatus;
           _tournamentTeams = tourData['teams'] ?? [];
           _allTeams = json.decode(utf8.decode(resTeams.bodyBytes));
+          _referees = referees;
+          _matchRefereeIds = refereeIds;
           if (resStandings.statusCode == 200) {
             _standings = json.decode(utf8.decode(resStandings.bodyBytes));
           }
           if (resFixtures.statusCode == 200) {
-            _fixtures = json.decode(utf8.decode(resFixtures.bodyBytes));
+            _fixtures = fixtures;
           }
           if (resPlayers.statusCode == 200) {
             _allPlayers = json.decode(utf8.decode(resPlayers.bodyBytes));
@@ -532,6 +569,127 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     }
   }
 
+  Future<void> _assignReferee(int matchId, int refereeId) async {
+    setState(() => _assigningMatchIds = {..._assigningMatchIds, matchId});
+    try {
+      final response = await http.put(
+        Uri.parse('$kBaseUrl/api/matches/$matchId/referee/$refereeId'),
+      );
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        setState(() => _matchRefereeIds[matchId] = refereeId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('referee_assigned'.tr)),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('referee_assignment_failed'.tr)),
+        );
+      }
+    } catch (e) {
+      debugPrint('Assign referee error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('connection_error'.tr)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _assigningMatchIds = {..._assigningMatchIds}..remove(matchId));
+      }
+    }
+  }
+
+  Future<void> _createReferee(String firstName, String lastName) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$kBaseUrl/api/referees'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'firstName': firstName, 'lastName': lastName}),
+      );
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final referee = json.decode(utf8.decode(response.bodyBytes));
+        if (!mounted) return;
+        setState(() => _referees = [..._referees, referee]);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('referee_added'.tr)),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('referee_creation_failed'.tr)),
+        );
+      }
+    } catch (e) {
+      debugPrint('Create referee error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('connection_error'.tr)),
+        );
+      }
+    }
+  }
+
+  Future<void> _showCreateRefereeDialog() async {
+    final formKey = GlobalKey<FormState>();
+    final firstNameController = TextEditingController();
+    final lastNameController = TextEditingController();
+    final result = await showDialog<List<String>>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: kSurface,
+        title: Text('add_referee'.tr, style: const TextStyle(color: Colors.white)),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: firstNameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(labelText: 'first_name'.tr),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'field_required'.tr
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: lastNameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(labelText: 'last_name'.tr),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'field_required'.tr
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('cancel'.tr),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(dialogContext, [
+                  firstNameController.text.trim(),
+                  lastNameController.text.trim(),
+                ]);
+              }
+            },
+            icon: const Icon(Icons.save_outlined),
+            label: Text('save_button'.tr),
+          ),
+        ],
+      ),
+    );
+    firstNameController.dispose();
+    lastNameController.dispose();
+    if (result != null) {
+      await _createReferee(result[0], result[1]);
+    }
+  }
+
   Future<void> _generateFixtures() async {
     if (_tournamentTeams.length < 2) {
       if (mounted) {
@@ -892,6 +1050,12 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), 
               ),
             ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _showCreateRefereeDialog,
+              icon: const Icon(Icons.person_add_alt_1),
+              label: Text('add_referee'.tr),
+            ),
           ],
         ),
       );
@@ -899,9 +1063,32 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _fixtures.length,
+      itemCount: _fixtures.length + 1,
       itemBuilder: (context, index) {
-        final fix = _fixtures[index];
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.sports, color: kPrimary, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${'referees'.tr} (${_referees.length})',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'add_referee'.tr,
+                  onPressed: _showCreateRefereeDialog,
+                  icon: const Icon(Icons.person_add_alt_1, color: kPrimary),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final fix = _fixtures[index - 1];
         final homeTeamId = fix['homeTeamId'];
         final awayTeamId = fix['awayTeamId'];
         final status = fix['status'] ?? 'SCHEDULED';
@@ -959,6 +1146,55 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                   Expanded(child: Text(awayTeam['name']?.toString().toUpperCase() ?? 'UNKNOWN', textAlign: TextAlign.right, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
                 ],
               ),
+              if (matchId is num) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.sports, size: 16, color: kTextSub),
+                    const SizedBox(width: 8),
+                    Text('${'referee'.tr}:', style: const TextStyle(color: kTextSub, fontSize: 12)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButton<int>(
+                        isExpanded: true,
+                        value: _referees.any((referee) => referee['id'] == _matchRefereeIds[matchId.toInt()])
+                            ? _matchRefereeIds[matchId.toInt()]
+                            : null,
+                        hint: Text(
+                          (_referees.isEmpty ? 'no_referees' : 'select_referee').tr,
+                          style: const TextStyle(color: kTextSub, fontSize: 13),
+                        ),
+                        dropdownColor: kSurface,
+                        underline: const SizedBox.shrink(),
+                        items: _referees.map((referee) {
+                          final refereeId = (referee['id'] as num).toInt();
+                          return DropdownMenuItem<int>(
+                            value: refereeId,
+                            child: Text(
+                              '${referee['firstName']} ${referee['lastName']}',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: _assigningMatchIds.contains(matchId.toInt()) || _referees.isEmpty
+                            ? null
+                            : (refereeId) {
+                                if (refereeId != null) {
+                                  _assignReferee(matchId.toInt(), refereeId);
+                                }
+                              },
+                      ),
+                    ),
+                    if (_assigningMatchIds.contains(matchId.toInt()))
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                  ],
+                ),
+              ],
               if (status != 'FINISHED') ...[
                 const SizedBox(height: 12),
                 SizedBox(

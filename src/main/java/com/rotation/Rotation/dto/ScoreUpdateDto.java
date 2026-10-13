@@ -16,4 +16,7 @@ public class ScoreUpdateDto {
     private String status;
     private Integer team1Sets;
     private Integer team2Sets;
+    private Long refereeId;
+    private String refereeFirstName;
+    private String refereeLastName;
 }

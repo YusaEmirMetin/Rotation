@@ -14,16 +14,21 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.rotation.Rotation.entity.Player;
+import com.rotation.Rotation.entity.Match;
+import com.rotation.Rotation.entity.Referee;
 import com.rotation.Rotation.entity.Team;
 import com.rotation.Rotation.entity.Tournament;
 import com.rotation.Rotation.entity.TournamentStanding;
 import com.rotation.Rotation.entity.enums.PlayerPosition;
 import com.rotation.Rotation.entity.enums.TournamentStatus;
 import com.rotation.Rotation.repository.PlayerRepository;
+import com.rotation.Rotation.repository.MatchRepository;
+import com.rotation.Rotation.repository.RefereeRepository;
 import com.rotation.Rotation.repository.TeamRepository;
 import com.rotation.Rotation.repository.TournamentRepository;
 import com.rotation.Rotation.repository.TournamentStandingRepository;
 import com.rotation.Rotation.service.PlayerService;
+import com.rotation.Rotation.service.MatchService;
 import com.rotation.Rotation.service.TeamService;
 
 @SpringBootTest
@@ -34,6 +39,15 @@ class RotationApplicationTests {
 
 	@Autowired
 	private PlayerRepository playerRepository;
+
+	@Autowired
+	private MatchRepository matchRepository;
+
+	@Autowired
+	private RefereeRepository refereeRepository;
+
+	@Autowired
+	private MatchService matchService;
 
 	@Autowired
 	private PlayerService playerService;
@@ -49,6 +63,25 @@ class RotationApplicationTests {
 
 	@Test
 	void contextLoads() {
+	}
+
+	@Test
+	@Transactional
+	void refereeCanBeAssignedToMatch() {
+		Referee referee = refereeRepository.saveAndFlush(Referee.builder()
+				.firstName("Ada")
+				.lastName("Yilmaz")
+				.build());
+		Match match = matchRepository.saveAndFlush(Match.builder()
+				.team1Name("Team A")
+				.team2Name("Team B")
+				.build());
+
+		Match assignedMatch = matchService.assignReferee(match.getId(), referee.getId());
+
+		assertEquals(referee.getId(), assignedMatch.getReferee().getId());
+		assertEquals("Yilmaz", matchRepository.findById(match.getId()).orElseThrow()
+				.getReferee().getLastName());
 	}
 
 	@Test

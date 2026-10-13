@@ -1,10 +1,10 @@
 package com.rotation.Rotation.entity;
 
 import com.rotation.Rotation.entity.enums.PlayerPosition;
-import com.rotation.Rotation.entity.enums.PlayerPosition;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "players")
@@ -26,6 +26,8 @@ public class Player {
     private String lastName;
 
     @Column(name = "jersey_number", nullable = false)
+    @Min(value = 1, message = "Jersey number must be a positive integer")
+    @Max(value = 99, message = "Jersey number must be less than or equal to 99")
     private Integer jerseyNumber;
 
     @Enumerated(EnumType.STRING)

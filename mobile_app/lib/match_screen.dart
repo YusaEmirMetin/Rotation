@@ -42,6 +42,7 @@ class _MatchScreenState extends State<MatchScreen>
   int _team1Sets = 0;
   int _team2Sets = 0;
   String _status = 'ACTIVE';
+  String? _refereeName;
 
   // Takım isimleri için Text Controller
   final TextEditingController _team1Ctrl = TextEditingController();
@@ -235,6 +236,13 @@ class _MatchScreenState extends State<MatchScreen>
     _team1Sets = data['team1Sets'] ?? 0;
     _team2Sets = data['team2Sets'] ?? 0;
     _status = data['status'] ?? 'ACTIVE';
+    final referee = data['referee'];
+    final firstName = data['refereeFirstName'] ??
+      (referee is Map ? referee['firstName'] : null);
+    final lastName = data['refereeLastName'] ??
+      (referee is Map ? referee['lastName'] : null);
+    final refereeName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
+    _refereeName = refereeName.isEmpty ? null : refereeName;
   }
 
   void _resetMatch() {
@@ -247,6 +255,7 @@ class _MatchScreenState extends State<MatchScreen>
       _team1Sets = 0;
       _team2Sets = 0;
       _status = 'ACTIVE';
+      _refereeName = null;
       _team1Ctrl.clear();
       _team2Ctrl.clear();
     });
@@ -523,7 +532,7 @@ class _MatchScreenState extends State<MatchScreen>
 
   Widget _buildMidBar(bool isFinished) {
     return Container(
-      height: 60,
+      height: _refereeName == null ? 60 : 76,
       decoration: BoxDecoration(
         color: const Color(0xFF0E0E20),
         border: Border.symmetric(
@@ -585,6 +594,13 @@ class _MatchScreenState extends State<MatchScreen>
                     height: 1.1,
                   ),
                 ),
+                if (_refereeName != null)
+                  Text(
+                    '${'referee'.tr}: $_refereeName',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: kTextSub, fontSize: 9, height: 1.1),
+                  ),
               ],
             ),
           ),

@@ -45,6 +45,11 @@ public class MatchController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/{matchId}/referee/{refereeId}")
+    public ResponseEntity<Match> assignReferee(@PathVariable Long matchId, @PathVariable Long refereeId) {
+        return ResponseEntity.ok(matchService.assignReferee(matchId, refereeId));
+    }
+
 
     // POST /api/matches/{id}/score
     // Body: { "team": 1, "delta": 1 } → team 1'e +1 puan

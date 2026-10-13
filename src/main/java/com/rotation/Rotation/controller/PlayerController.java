@@ -2,6 +2,7 @@ package com.rotation.Rotation.controller;
 
 import com.rotation.Rotation.entity.Player;
 import com.rotation.Rotation.service.PlayerService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ public class PlayerController {
 
     // POST /api/teams/1/players
     @PostMapping
-    public ResponseEntity<Player> addPlayer(@PathVariable Long teamId, @RequestBody Player player) {
+    public ResponseEntity<Player> addPlayer(@PathVariable Long teamId, @Valid @RequestBody Player player) {
         Player createdPlayer = playerService.addPlayerToTeam(teamId, player);
         return new ResponseEntity<>(createdPlayer, HttpStatus.CREATED);
     }
@@ -62,7 +63,7 @@ public class PlayerController {
 
     @PutMapping("/{playerId}")
     public ResponseEntity<Player> updatePlayer(@PathVariable Long teamId, @PathVariable Long playerId,
-            @RequestBody Player player) {
+            @Valid @RequestBody Player player) {
         return ResponseEntity.ok(playerService.updatePlayer(teamId, playerId, player));
     }
 

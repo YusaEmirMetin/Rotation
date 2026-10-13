@@ -2,10 +2,12 @@ package com.rotation.Rotation.service;
 
 import com.rotation.Rotation.dto.ScoreUpdateDto;
 import com.rotation.Rotation.entity.Match;
+import com.rotation.Rotation.entity.Referee;
 import com.rotation.Rotation.entity.Team;
 import com.rotation.Rotation.entity.Tournament;
 import com.rotation.Rotation.repository.FixtureRepository;
 import com.rotation.Rotation.repository.MatchRepository;
+import com.rotation.Rotation.repository.RefereeRepository;
 import com.rotation.Rotation.repository.TeamRepository;
 import com.rotation.Rotation.repository.PlayerStatsRepository;
 import com.rotation.Rotation.repository.TournamentStandingRepository;
@@ -14,9 +16,11 @@ import com.rotation.Rotation.entity.PlayerStats;
 import com.rotation.Rotation.entity.TournamentStanding;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +30,7 @@ import java.util.Optional;
 public class MatchService {
 
     private final MatchRepository matchRepository;
+    private final RefereeRepository refereeRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final TeamRepository teamRepository;
     private final TournamentService tournamentService;
@@ -55,6 +60,21 @@ public class MatchService {
 
     public Optional<Match> getMatchById(Long id) {
         return matchRepository.findById(id);
+    }
+
+    @Transactional
+    public Match assignReferee(Long matchId, Long refereeId) {
+        Match match = matchRepository.findById(matchId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Maç bulunamadı: " + matchId));
+        Referee referee = refereeRepository.findById(refereeId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Hakem bulunamadı: " + refereeId));
+
+        match.setReferee(referee);
+        Match saved = matchRepository.save(match);
+        broadcast(saved);
+        return saved;
     }
 
     // Skor güncelle: team = 1 veya 2, delta = +1 veya -1
@@ -229,6 +249,9 @@ public class MatchService {
                 .team2Score(match.getTeam2Score())
                 .team1Sets(match.getTeam1Sets())
                 .team2Sets(match.getTeam2Sets())
+                .refereeId(match.getReferee() == null ? null : match.getReferee().getId())
+                .refereeFirstName(match.getReferee() == null ? null : match.getReferee().getFirstName())
+                .refereeLastName(match.getReferee() == null ? null : match.getReferee().getLastName())
                 .status(match.getStatus())
                 .build();
         messagingTemplate.convertAndSend("/topic/score", dto);

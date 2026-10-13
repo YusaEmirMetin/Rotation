@@ -56,4 +56,8 @@ public class Match {
     @ManyToOne
     @JoinColumn(name = "tournament_id")
     private Tournament tournament;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "referee_id")
+    private Referee referee;
 }
